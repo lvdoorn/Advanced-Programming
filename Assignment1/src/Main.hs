@@ -32,7 +32,7 @@ rotatePoint :: Double -> Point -> Point
 rotatePoint angle p = let a = degToRad angle in point (pointX p * cos a - pointY p * sin a, pointY p * cos a + pointX p * sin a)
 
 rotate :: Curve -> Double -> Curve
-rotate c1 angle = Curve (map (rotatePoint 180) $ toList c1)
+rotate c1 angle = Curve (map (rotatePoint angle) $ toList c1)
 
 translatePoint :: (Double, Double) -> Point -> Point
 translatePoint (x,y) p = point(x + pointX p, y + pointY p)
@@ -94,8 +94,21 @@ listToLines [_] = ""
 listToLines (x:y:xs) = createLine x y ++ "\n" ++ listToLines (y:xs)
 
 toSVG :: Curve -> String
-toSVG (Curve list) = "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"10px\" height=\"10px\" version=\"1.1\"><g>" ++
+toSVG (Curve list) = "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"100px\" height=\"100px\" version=\"1.1\"><g>" ++
   listToLines list ++ "</g></svg>"
 
 toFile :: Curve -> FilePath -> IO ()
 toFile curve path = writeFile path $ toSVG curve
+
+hilbert :: Curve -> Curve
+hilbert c = c0 `connect` c1 `connect` c2 `connect` c3
+   where  w = width c
+          h = height c
+          p = 6
+
+          ch = reflect c $ Vertical 0
+
+          c0 = ch `rotate` (-90) `translate` point (w+p+w, h+p+h)
+          c1 = c `translate` point (w+p+w, h)
+          c2 = c
+          c3 = ch `rotate` 90 `translate` point (0, h+p)
