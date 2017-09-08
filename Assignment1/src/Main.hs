@@ -1,8 +1,4 @@
-module Main where
-
-main :: IO ()
-main = do
-  putStrLn "hello world"
+import Text.Printf
 
 data Point = Point { x :: Double, y :: Double} deriving Show
 
@@ -73,3 +69,19 @@ bbox (Curve list) = (Point minX minY, Point maxX maxY) where
   minY = minimum yList
   maxY = maximum yList
 
+createLine :: Point -> Point -> String
+createLine (Point x1 y1) (Point x2 y2) = 
+  printf ("<line style=\"stroke-width: 2px; stroke: black; fill:white\"" ++
+  "x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" />") x1 x2 y1 y2
+
+listToLines :: [Point] -> String
+listToLines [] = ""
+listToLines [_] = ""
+listToLines (x:y:xs) = createLine x y ++ "\n" ++ listToLines (y:xs)
+
+toSVG :: Curve -> String
+toSVG (Curve list) = "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"10px\" height=\"10px\" version=\"1.1\"><g>" ++
+  listToLines list ++ "</g></svg>"
+
+toFile :: Curve -> FilePath -> IO ()
+toFile curve path = writeFile path $ toSVG curve
