@@ -94,7 +94,7 @@ listToLines [_] = ""
 listToLines (x:y:xs) = createLine x y ++ "\n" ++ listToLines (y:xs)
 
 toSVG :: Curve -> String
-toSVG (Curve list) = "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"100px\" height=\"100px\" version=\"1.1\"><g>" ++
+toSVG (Curve list) = "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"200px\" height=\"200px\" version=\"1.1\"><g>" ++
   listToLines list ++ "</g></svg>"
 
 toFile :: Curve -> FilePath -> IO ()
@@ -106,9 +106,25 @@ hilbert c = c0 `connect` c1 `connect` c2 `connect` c3
           h = height c
           p = 6
 
-          ch = reflect c $ Vertical 0
+          ch = reflect c $ Vertical 0 -- html svg has 0,0 in top left corner
 
           c0 = ch `rotate` (-90) `translate` point (w+p+w, h+p+h)
           c1 = c `translate` point (w+p+w, h)
           c2 = c
           c3 = ch `rotate` 90 `translate` point (0, h+p)
+
+peano :: Curve -> Curve
+peano c = c0 `connect` c1 `connect` c2 `connect` c3 `connect` c4 `connect` c5 `connect` c6 `connect` c7 `connect` c8
+  where w = width c
+        h = height c
+        p = 6
+        ch = reflect c $ Vertical 0
+        c0 = c `translate` point (w+p+w+p+w, 0)
+        c1 = ch `translate` point (w+p+w+p, h+p)
+        c2 = c `translate` point (w+p+w+p+w, h+p+h+p)
+        c3 = ch `rotate` 180 `translate` point (w+p+w, h+p+h+p+h)
+        c4 = c `rotate` 180 `translate` point (w+p, h+p+h)
+        c5 = ch `rotate` 180 `translate` point (w+p+w, h)
+        c6 = c
+        c7 = ch `translate` point (0, p+h)
+        c8 = c `translate` point (w, h+p+h+p)
