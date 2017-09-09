@@ -29,21 +29,17 @@ degToRad deg = deg * pi / 180
 
 -- Rotates a point around the origin by angle degrees
 rotatePoint :: Double -> Point -> Point
-rotatePoint angle p = let a = degToRad angle in point (pointX p * cos a - pointY p * sin a, pointY p * cos a + pointX p * sin a)
+rotatePoint angle (Point x y) = let a = degToRad angle in point (x * cos a - y * sin a, y * cos a + x * sin a)
 
 rotate :: Curve -> Double -> Curve
 rotate c1 angle = Curve (map (rotatePoint angle) $ toList c1)
 
 translatePoint :: (Double, Double) -> Point -> Point
-translatePoint (x,y) p = point(x + pointX p, y + pointY p)
+translatePoint (x,y) (Point px py) = point(x + px, y + py)
 
 getOffset :: Curve -> Point -> (Double, Double)
-getOffset c p =  (x2 - x1, y2 - y1) where
-  first = head $ toList c
-  x1 = pointX first
-  x2 = pointX p
-  y1 = pointY first
-  y2 = pointY p
+getOffset c (Point x2 y2) =  (x2 - x1, y2 - y1) where
+  Point x1 y1 = head $ toList c
 
 translate :: Curve -> Point -> Curve
 translate c p = Curve (translatePoint (getOffset c p) `map` (toList c))
