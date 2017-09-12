@@ -48,7 +48,7 @@ getOffset c (Point x2 y2) =  (x2 - x1, y2 - y1) where
 
 -- Translates a curve s.t. the starting point will be ~p
 translate :: Curve -> Point -> Curve
-translate c p = Curve translatePoint (getOffset c p) `map` toList c
+translate c p = Curve (translatePoint (getOffset c p) `map` toList c)
 
 data Line = Vertical Double | Horizontal Double
 
