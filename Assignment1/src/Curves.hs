@@ -1,26 +1,22 @@
-module Curves (Point(), Curve(), point, pointX, pointY, curve, toList, connect, rotate, translate, ) where
+module Curves (Point(), Curve(), point, pointX, pointY, curve, toList, connect,
+  rotate, translate, Line(..), reflect, bbox, width, height, normalize,
+  toFile, rev, hilbert, peano, dragon, dragonr) where
 
 import Text.Printf
 
-data Point = Point { x :: Double, y :: Double} deriving Show
+data Point = Point { pointX :: Double, pointY :: Double} deriving Show
 
 point :: (Double, Double) -> Point
 point (x,y) = Point x y
 
-pointX :: Point -> Double
-pointX (Point x _) = x
+instance Eq Point where
+  a == b = abs (pointX a - pointX b) < 0.01
+        && abs (pointY a - pointY b) < 0.01
 
-pointY :: Point -> Double
-pointY (Point _ y) = y
+newtype Curve = Curve { toList :: [Point] } deriving (Show, Eq)
 
-instance Eq Point where a == b = abs (pointX a - pointX b) < 0.01 && abs (pointY a - pointY b) < 0.01
-
-newtype Curve = Curve { list :: [Point] } deriving Show
 curve :: Point -> [Point] -> Curve
-curve point list = Curve (point : list)
-
-toList :: Curve -> [Point]
-toList (Curve list) = list
+curve p list = Curve (p : list)
 
 connect :: Curve -> Curve -> Curve
 connect c1 c2 = Curve (toList c1 ++ toList c2)
@@ -31,7 +27,9 @@ degToRad deg = deg * pi / 180
 
 -- Rotates a point around the origin by angle degrees
 rotatePoint :: Double -> Point -> Point
-rotatePoint angle (Point x y) = let a = degToRad angle in point (x * cos a - y * sin a, y * cos a + x * sin a)
+rotatePoint angle (Point x y) =
+  let a = degToRad angle in point (x * cos a - y * sin a,
+                                   y * cos a + x * sin a)
 
 -- Rotates a point around the origin
 rotate :: Curve -> Double -> Curve
@@ -77,24 +75,26 @@ bbox (Curve list) = (Point minX minY, Point maxX maxY) where
 
 -- Calculates the width of a curve
 width :: Curve -> Double
-width c = let bb = bbox c 
-          in pointX (snd bb) - pointX (fst bb) 
+width c = let bb = bbox c
+          in pointX (snd bb) - pointX (fst bb)
 
 -- Calculates the height of a curve+
 height :: Curve -> Double
-height c = let bb = bbox c 
-           in pointY (snd bb) - pointY (fst bb) 
+height c = let bb = bbox c
+           in pointY (snd bb) - pointY (fst bb)
 
 -- Normalizes a curve by translating it into the first quadrant
 normalize :: Curve -> Curve
 normalize c = let lowerLeftBboxPoint = fst (bbox c)
                   lowerLeftBboxPointX = pointX lowerLeftBboxPoint
                   lowerLeftBboxPointY = pointY lowerLeftBboxPoint
-              in Curve (translatePoint (- lowerLeftBboxPointX, - lowerLeftBboxPointY) `map` toList c)
+              in Curve (translatePoint
+                (- lowerLeftBboxPointX, - lowerLeftBboxPointY)
+                `map` toList c)
 
 -- Generate a line of the svg representation
 createLine :: Point -> Point -> String
-createLine (Point x1 y1) (Point x2 y2) = 
+createLine (Point x1 y1) (Point x2 y2) =
   printf ("<line style=\"stroke-width: 2px; stroke: black; fill:white\"" ++
   "x1=\"%.2f\" x2=\"%.2f\" y1=\"%.2f\" y2=\"%.2f\" />") x1 x2 y1 y2
 
@@ -106,12 +106,14 @@ listToLines (x:y:xs) = createLine x y ++ "\n" ++ listToLines (y:xs)
 
 -- Generates the svg representation of a curve
 toSVG :: Curve -> String
-toSVG (Curve list) = "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"200px\" height=\"200px\" version=\"1.1\"><g>" ++
+toSVG (Curve list) =
+  "<svg xmlns=\"http://www.w3.org/2000/svg\"width=\"200px\"" ++
+  "height=\"200px\" version=\"1.1\"><g>" ++
   listToLines list ++ "</g></svg>"
 
 -- Writes a curve to file
 toFile :: Curve -> FilePath -> IO ()
-toFile curve path = writeFile path $ toSVG curve
+toFile c path = writeFile path $ toSVG c
 
 -- Reverses a curve
 rev :: Curve -> Curve
@@ -133,11 +135,12 @@ hilbert c = c0 `connect` c1 `connect` c2 `connect` c3
 
 -- Creates a peano curve
 peano :: Curve -> Curve
-peano c = c0 `connect` c1 `connect` c2 `connect` c3 `connect` c4 `connect` c5 `connect` c6 `connect` c7 `connect` c8
+peano c = c0 `connect` c1 `connect` c2 `connect` c3 `connect` c4
+             `connect` c5 `connect` c6 `connect` c7 `connect` c8
   where w = width c
         h = height c
         p = 6
-        
+
         ch = reflect c $ Vertical 0
         chr = ch `rotate` 180
 
@@ -151,14 +154,16 @@ peano c = c0 `connect` c1 `connect` c2 `connect` c3 `connect` c4 `connect` c5 `c
         c7 = ch `translate` point (0, p+h)
         c8 = c `translate` point (w, h+p+h+p)
 
--- Draws dragon curve iteratively by rotating input curve around its endpoint and adding the result to the curve
+-- Draws dragon curve iteratively by rotating input curve
+-- around its endpoint and adding the result to the curve.
+-- Run as dragon $ curve (point (5,0)) [point (0,0)]
 dragon :: Curve -> Curve
-dragon c = normalize $ c `connect` c1 -- run as dragon Curve([Point 5 0, Point 0 0])
+dragon c = normalize $ c `connect` c1
   where a = 90
         c1 = (rev c `rotate` a) `translate` last (toList c)
 
 -- Calls dragon recursively
--- Try: $> dragonr (curve point (5,0)) [point (0,0)] 10
+-- Try: $> dragonr (curve (point (5,0)) [point (0,0)]) 10
 dragonr :: Curve -> Int -> Curve
 dragonr c 0 = c
 dragonr c i = dragonr (dragon c) (i - 1)
