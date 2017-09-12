@@ -137,22 +137,22 @@ hilbert c = c0 `connect` c1 `connect` c2 `connect` c3
 peano :: Curve -> Curve
 peano c = c0 `connect` c1 `connect` c2 `connect` c3 `connect` c4
              `connect` c5 `connect` c6 `connect` c7 `connect` c8
-  where w = width c
-        h = height c
-        p = 6
+  where pw = width c
+        ph = height c
+        pp = 6
 
-        ch = reflect c $ Vertical 0
-        chr = ch `rotate` 180
+        pch = reflect c $ Vertical 0
+        pchr = pch `rotate` 180
 
-        c0 = c `translate` point (w+p+w+p+w, 0)
-        c1 = ch `translate` point (w+p+w+p, h+p)
-        c2 = c `translate` point (w+p+w+p+w, h+p+h+p)
-        c3 = chr `translate` point (w+p+w, h+p+h+p+h)
-        c4 = c `rotate` 180 `translate` point (w+p, h+p+h)
-        c5 = chr `translate` point (w+p+w, h)
-        c6 = c
-        c7 = ch `translate` point (0, p+h)
-        c8 = c `translate` point (w, h+p+h+p)
+        c0 = pc `translate` point (pw+pp+pw+pp+pw, 0)
+        c1 = pch `translate` point (pw+pp+pw+pp, ph+pp)
+        c2 = pc `translate` point (pw+pp+pw+pp+pw, ph+pp+ph+pp)
+        c3 = pchr `translate` point (pw+pp+pw, ph+pp+ph+pp+ph)
+        c4 = pc `rotate` 180 `translate` point (pw+pp, ph+pp+ph)
+        c5 = pchr `translate` point (pw+pp+pw, ph)
+        c6 = pc
+        c7 = pch `translate` point (0, pp+ph)
+        c8 = pc `translate` point (pw, ph+pp+ph+pp)
 
 -- Draws dragon curve iteratively by rotating input curve
 -- around its endpoint and adding the result to the curve.
