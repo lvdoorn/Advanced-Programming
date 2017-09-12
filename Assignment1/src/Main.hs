@@ -1,3 +1,5 @@
+module Curves where
+
 import Text.Printf
 
 data Point = Point { x :: Double, y :: Double} deriving Show
@@ -6,10 +8,10 @@ point :: (Double, Double) -> Point
 point (x,y) = Point x y
 
 pointX :: Point -> Double
-pointX (Point x y) = x
+pointX (Point x _) = x
 
 pointY :: Point -> Double
-pointY (Point x y) = y
+pointY (Point _ y) = y
 
 instance Eq Point where a == b = abs (pointX a - pointX b) < 0.01 && abs (pointY a - pointY b) < 0.01
 
