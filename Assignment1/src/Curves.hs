@@ -144,15 +144,15 @@ peano c = c0 `connect` c1 `connect` c2 `connect` c3 `connect` c4
         pch = reflect c $ Vertical 0
         pchr = pch `rotate` 180
 
-        c0 = pc `translate` point (pw+pp+pw+pp+pw, 0)
+        c0 = c `translate` point (pw+pp+pw+pp+pw, 0)
         c1 = pch `translate` point (pw+pp+pw+pp, ph+pp)
-        c2 = pc `translate` point (pw+pp+pw+pp+pw, ph+pp+ph+pp)
+        c2 = c `translate` point (pw+pp+pw+pp+pw, ph+pp+ph+pp)
         c3 = pchr `translate` point (pw+pp+pw, ph+pp+ph+pp+ph)
-        c4 = pc `rotate` 180 `translate` point (pw+pp, ph+pp+ph)
+        c4 = c `rotate` 180 `translate` point (pw+pp, ph+pp+ph)
         c5 = pchr `translate` point (pw+pp+pw, ph)
-        c6 = pc
+        c6 = c
         c7 = pch `translate` point (0, pp+ph)
-        c8 = pc `translate` point (pw, ph+pp+ph+pp)
+        c8 = c `translate` point (pw, ph+pp+ph+pp)
 
 -- Draws dragon curve iteratively by rotating input curve
 -- around its endpoint and adding the result to the curve.
