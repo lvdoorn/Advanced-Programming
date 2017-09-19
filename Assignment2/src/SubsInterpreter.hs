@@ -99,12 +99,12 @@ instance Applicative SubsM where
 
 -- m a -> (a -> m b) -> m b
 instance Monad SubsM where
-  return x = SubsM (\(e,p) -> Right (x, e))
+  return x = SubsM (\(e,_) -> Right (x, e))
   m >>= f = SubsM $ \(e,p) -> let res = runSubsM m (e,p) in
     case res of
       Left err -> Left err
       Right (val, e') -> runSubsM (f val) (e',p)
-  fail s = SubsM (\x -> Left s)
+  fail s = SubsM (\_ -> Left s)
 
 
 
@@ -116,13 +116,13 @@ mkArray [IntVal n] | n >= 0 = return $ ArrayVal (replicate n UndefinedVal)
 mkArray _ = Left "Array() called with wrong number or type of arguments"
 
 modifyEnv :: (Env -> Env) -> SubsM ()
-modifyEnv f = SubsM (\(e,p) -> Right ((), f e))
+modifyEnv f = SubsM (\(e,_) -> Right ((), f e))
 
 putVar :: Ident -> Value -> SubsM ()
-putVar name val = SubsM (\(e,p) -> Right ((), Map.insert name val e))
+putVar name val = SubsM (\(e,_) -> Right ((), Map.insert name val e))
 
 getVar :: Ident -> SubsM Value
-getVar name = SubsM (\(e,p) -> case Map.lookup name e of
+getVar name = SubsM (\(e,_) -> case Map.lookup name e of
                         Nothing -> Left "Var not found"
                         Just i ->  Right (i, e)
                     )
@@ -157,10 +157,12 @@ helper (e:xs) = do res <- evalExpr e
                    return $ ArrayVal (res:res2)
 
 applyPrimitive :: Primitive -> Value -> SubsM Value
-applyPrimitive pr (ArrayVal list) = case pr list of
-  Left err -> fail err
-  Right res -> return res
-
+applyPrimitive pr val = case val of 
+ (ArrayVal list) -> case pr list of
+                    Left err -> fail err
+                    Right res -> return res
+ _ -> fail "Error applyPrimitive expects an ArrayVal"
+ 
 -- eval (Var ident) ctx = getVar ident ctx
 
 -- eval (Call funName exprs) ctx@(env, penv) = case (getFunction funName ctx) of
@@ -170,7 +172,7 @@ applyPrimitive pr (ArrayVal list) = case pr list of
 runExpr :: Expr -> Either Error Value
 runExpr expr = case (runSubsM $ evalExpr expr) initialContext of
   Left err -> Left err
-  Right (val, env) -> Right val
+  Right (val, _) -> Right val
 
 
 
