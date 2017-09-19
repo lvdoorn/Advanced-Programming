@@ -55,28 +55,28 @@ initialContext = (Map.empty, initialPEnv)
                        ]
 
 plusPrimitive :: Primitive
-plusPrimitive (IntVal n: IntVal m: []) = Right $ IntVal (n + m)
-plusPrimitive (StringVal n: StringVal m: []) = Right $ StringVal (n ++ m)
-plusPrimitive (IntVal n: StringVal m: []) = Right $ StringVal (show n ++ m)
-plusPrimitive (StringVal n: IntVal m: []) = Right $ StringVal (n ++ show m)
+plusPrimitive [IntVal n, IntVal m] = Right $ IntVal (n + m)
+plusPrimitive [StringVal n, StringVal m] = Right $ StringVal (n ++ m)
+plusPrimitive [IntVal n, StringVal m] = Right $ StringVal (show n ++ m)
+plusPrimitive [StringVal n, IntVal m] = Right $ StringVal (n ++ show m)
 plusPrimitive _ = Left "(+) called with wrong number or type of arguments"
 
 minusPrimitive :: Primitive
-minusPrimitive (IntVal n: IntVal m: []) = Right $ IntVal (n - m)
+minusPrimitive [IntVal n, IntVal m] = Right $ IntVal (n - m)
 minusPrimitive _ = Left "(-) called with wrong number or type of arguments"
 
 productPrimitive :: Primitive
-productPrimitive (IntVal n: IntVal m: []) = Right $ IntVal (n * m)
+productPrimitive [IntVal n, IntVal m] = Right $ IntVal (n * m)
 productPrimitive _ = Left "(*) called with wrong number or type of arguments"
 
 modPrimitive :: Primitive
-modPrimitive (IntVal n: IntVal m: []) = Right $ IntVal (n `mod` m)
+modPrimitive [IntVal n, IntVal m] = Right $ IntVal (n `mod` m)
 modPrimitive _ = Left "(%) called with wrong number or type of arguments"
 
 lessThanPrimitive :: Primitive
-lessThanPrimitive (IntVal n: IntVal m: []) = Right val 
+lessThanPrimitive [IntVal n, IntVal m] = Right val 
  where val = if n < m then TrueVal else FalseVal
-lessThanPrimitive (StringVal n: StringVal m: []) = Right val 
+lessThanPrimitive [StringVal n, StringVal m] = Right val 
  where val = if n < m then TrueVal else FalseVal
 lessThanPrimitive _ = Left "(<) called with wrong number or type of arguments"
 
@@ -131,22 +131,21 @@ getVar name = SubsM (\(e,p) -> case Map.lookup name e of
                     )
 
 getFunction :: FunName -> SubsM Primitive
-getFunction name = case (Map.lookup name $ snd initialContext) of
+getFunction name = case Map.lookup name $ snd initialContext of
                         Nothing -> fail "Call Error: function does not exist"
                         Just i -> return i
 
 evalExpr :: Expr -> SubsM Value
 evalExpr (Number i) = return $ IntVal i
 evalExpr (String s) = return $ StringVal s
-evalExpr Undefined = return $ UndefinedVal
-evalExpr TrueConst = return $ TrueVal
-evalExpr FalseConst = return $ FalseVal
+evalExpr Undefined = return UndefinedVal
+evalExpr TrueConst = return TrueVal
+evalExpr FalseConst = return FalseVal
 evalExpr (Array []) = return $ ArrayVal []
 evalExpr (Array exprs) = helper exprs
 evalExpr (Var s) = getVar s
 evalExpr (Call func exprs) = do x <- getFunction func
-                                y <- helper2 exprs >>= applyPrimitive x
-                                return y
+                                helper2 exprs >>= applyPrimitive x
 evalExpr (Assign s expr) = evalExpr expr >>= putVar2 s
 evalExpr (Comma expr1 expr2) = evalExpr expr1 >> evalExpr expr2
 
@@ -174,7 +173,7 @@ applyPrimitive pr list = case pr list of
                         -- Right f -> f $ getArrayVal $ getRightVal $ eval (Array exprs) ctx
 
 runExpr :: Expr -> Either Error Value
-runExpr expr = case (runSubsM $ evalExpr expr) (initialContext) of
+runExpr expr = case (runSubsM $ evalExpr expr) initialContext of
   Left err -> Left err
   Right (val, env) -> Right val
 
