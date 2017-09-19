@@ -123,7 +123,7 @@ putVar name val = SubsM (\(e,p) -> Right ((), Map.insert name val e))
 
 getVar :: Ident -> SubsM Value
 getVar name = SubsM (\(e,p) -> case Map.lookup name e of
-                        Nothing -> Left "Var ident Error"
+                        Nothing -> Left "Var not found"
                         Just i ->  Right (i, e)
                     )
 
