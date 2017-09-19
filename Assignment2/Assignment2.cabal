@@ -29,6 +29,9 @@ library
                      , containers
 
 test-suite test-Assignment2
+  other-modules:	ArrayComprSpec
+                      , SimpleFunctionsSpec
+                      , PrimitivesSpec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       test
