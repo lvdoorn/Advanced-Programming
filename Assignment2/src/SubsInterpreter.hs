@@ -121,9 +121,6 @@ modifyEnv f = SubsM (\(e,p) -> Right ((), f e))
 putVar :: Ident -> Value -> SubsM ()
 putVar name val = SubsM (\(e,p) -> Right ((), Map.insert name val e))
 
-putVar2 :: Ident -> Value -> SubsM Value
-putVar2 name val = SubsM (\(e,p) -> Right (val, Map.insert name val e))
-
 getVar :: Ident -> SubsM Value
 getVar name = SubsM (\(e,p) -> case Map.lookup name e of
                         Nothing -> Left "Var ident Error"
@@ -144,10 +141,13 @@ evalExpr FalseConst = return $ FalseVal
 evalExpr (Array []) = return $ ArrayVal []
 evalExpr (Array exprs) = helper exprs
 evalExpr (Var s) = getVar s
-evalExpr (Call func exprs) = do x <- getFunction func
-                                y <- helper2 exprs >>= applyPrimitive x
-                                return y
-evalExpr (Assign s expr) = evalExpr expr >>= putVar2 s
+evalExpr (Call func exprs) = do primitiveFunc <- getFunction func
+                                arrayValExprs <- evalExpr (Array exprs)
+                                res <- applyPrimitive primitiveFunc arrayValExprs
+                                return res
+evalExpr (Assign ident expr) = do exprVal <- evalExpr expr
+                                  _ <- putVar ident exprVal
+                                  return exprVal
 evalExpr (Comma expr1 expr2) = evalExpr expr1 >> evalExpr expr2
 
 helper :: [Expr] -> SubsM Value
@@ -156,14 +156,8 @@ helper (e:xs) = do res <- evalExpr e
                    ArrayVal res2 <- helper xs
                    return $ ArrayVal (res:res2)
 
-helper2 :: [Expr] -> SubsM [Value]
-helper2 [] = return []
-helper2 (e:xs) = do res <- evalExpr e
-                    res2 <- helper2 xs
-                    return (res:res2)
-
-applyPrimitive :: Primitive -> [Value] -> SubsM Value
-applyPrimitive pr list = case pr list of
+applyPrimitive :: Primitive -> Value -> SubsM Value
+applyPrimitive pr (ArrayVal list) = case pr list of
   Left err -> fail err
   Right res -> return res
 
@@ -177,8 +171,6 @@ runExpr :: Expr -> Either Error Value
 runExpr expr = case (runSubsM $ evalExpr expr) (initialContext) of
   Left err -> Left err
   Right (val, env) -> Right val
-
-
 
 
 
