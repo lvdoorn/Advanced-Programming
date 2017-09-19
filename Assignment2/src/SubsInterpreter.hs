@@ -45,13 +45,11 @@ initialContext = (Map.empty, initialPEnv)
 newtype SubsM a = SubsM {runSubsM :: Context -> Either Error (a, Env)}
 
 instance Functor SubsM where
---fmap :: (a -> b) -> f a -> f b
---  fmap func fa = SubsM $ func fa
---fmap func SubsM((context -> Right val)) = SubsM((context -> Right(func val)))
+fmap f m = m >>= \a -> return(f a)
 
 instance Applicative SubsM where
-  pure = undefined
-  (<*>) = undefined
+  pure = return;
+  (<*>) = ap
 
 instance Monad SubsM where
   return x = SubsM (\(e,p) -> Right (x, e))
@@ -59,7 +57,7 @@ instance Monad SubsM where
     case res of
       Left err -> Left err
       Right (val, e') -> runSubsM (f val) (e',p)
-  fail s = undefined
+  fail s = SubsM (\x -> Left s)
 
 
 mkArray :: Primitive
