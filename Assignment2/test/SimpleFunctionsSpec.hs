@@ -48,9 +48,9 @@ prop_var = runExpr (Var "x") == Left "Var not found"
 prop_assign :: Expr -> Bool
 prop_assign expr = runExpr (Assign "x" expr) == runExpr expr
 
-prop_comma :: Expr -> Expr -> Bool -- probably not be correct, e2 could give error on 
-                                   -- looking up a var added by e1
-prop_comma e1 e2 = runExpr (Comma e1 e2) == runExpr e2
+-- prop_comma :: Expr -> Expr -> Bool -- probably not be correct, e2 could give error on 
+--                                    -- looking up a var added by e1
+-- prop_comma e1 e2 = runExpr (Comma e1 e2) == 
 
 spec :: Spec
 spec = do
@@ -77,3 +77,6 @@ spec = do
 
   describe "Assign var" $ do
     prop "returns assigned value" $ prop_assign
+
+  -- describe "Comma" $ do
+  --   prop "returns the value of the second expression" $ prop_comma
