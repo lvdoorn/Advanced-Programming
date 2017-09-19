@@ -37,3 +37,4 @@ test-suite test-Assignment2
   Build-Depends:        base
                       , hspec
                       , QuickCheck
+                      , Assignment2
