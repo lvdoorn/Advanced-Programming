@@ -7,13 +7,10 @@ module SubsInterpreter
        , initialContext
        , getFunction
        , plusPrimitive
-       , env
-       , context
        , getVar
        , putVar
        , modifyEnv
        , applyPrimitive
-
        )
        where
 
@@ -23,7 +20,6 @@ import SubsAst
 import Control.Monad
 import qualified Data.Map as Map
 import Data.Map(Map)
-import Debug.Trace
 
 -- | A value is either an integer, the special constant undefined,
 --   true, false, a string, or an array of values.
@@ -98,7 +94,6 @@ instance Applicative SubsM where
   pure = return;
   (<*>) = ap
 
--- m a -> (a -> m b) -> m b
 instance Monad SubsM where
   return x = SubsM (\(e,_) -> Right (x, e))
   m >>= f = SubsM $ \(e,p) -> let res = runSubsM m (e,p) in
@@ -106,11 +101,6 @@ instance Monad SubsM where
       Left err -> Left err
       Right (val, e') -> runSubsM (f val) (e',p)
   fail s = SubsM (\_ -> Left s)
-
-
-
-
---type Primitive = [Value] -> Either Error Value
 
 mkArray :: Primitive
 mkArray [IntVal n] | n >= 0 = return $ ArrayVal (replicate n UndefinedVal)
@@ -142,9 +132,9 @@ evalExpr FalseConst = return FalseVal
 evalExpr (Array []) = return $ ArrayVal []
 evalExpr (Array exprs) = helper exprs
 evalExpr (Var s) = getVar s
-evalExpr (Call func exprs) = do primitiveFunc <- getFunction func
-                                arrayValExprs <- evalExpr (Array exprs)
-                                applyPrimitive primitiveFunc arrayValExprs
+evalExpr (Call f exprs) = do primitiveFunc <- getFunction f
+                             arrayValExprs <- evalExpr (Array exprs)
+                             applyPrimitive primitiveFunc arrayValExprs
 evalExpr (Assign ident expr) = do exprVal <- evalExpr expr
                                   _ <- putVar ident exprVal
                                   return exprVal
@@ -153,8 +143,8 @@ evalExpr (Compr compr) = evalCompr compr
 
 evalCompr :: ArrayCompr -> SubsM Value
 evalCompr (ACBody expr) = evalExpr expr
-evalCompr (ACFor id expr compr) = do arr <- evalExpr expr
-                                     func id arr compr
+evalCompr (ACFor identifier expr compr) = do arr <- evalExpr expr
+                                             func identifier arr compr
 
 -- Assume if only occurs after at least one for
 evalCompr (ACIf expr compr) = do res <- evalExpr expr
@@ -164,7 +154,7 @@ evalCompr (ACIf expr compr) = do res <- evalExpr expr
                                     _ -> fail "Not a boolean"
 
 func :: Ident -> Value -> ArrayCompr -> SubsM Value
-func i (ArrayVal []) compr = return $ ArrayVal []
+func _ (ArrayVal []) _ = return $ ArrayVal []
 func i (ArrayVal arr) compr = do
                       _ <- putVar i (head arr)
                       case compr of
@@ -174,20 +164,16 @@ func i (ArrayVal arr) compr = do
                         _ -> do res <- evalCompr compr
                                 ArrayVal list <- func i (ArrayVal (tail arr)) compr
                                 return $ ArrayVal $ res:list
+func _ _ _ = fail "func called with wrong parameters"
 
 evalIf :: ArrayCompr -> SubsM [Value]
 evalIf (ACIf expr compr) = do res <- evalExpr expr
                               ret <- evalCompr compr
-                              case (trace ("found res: " ++ show res) res) of
+                              case res of
                                 TrueVal -> return [ret]
                                 FalseVal -> return []
--- func i (StringVal []) compr = return $ StringVal []
--- func i (StringVal arr) compr = do
---                       _ <- putVar i (StringVal [(head arr)])
---                       res <- evalCompr compr
---                       StringVal list <- func i (StringVal (tail arr)) compr
---                       return $ StringVal $ res:list
-
+                                _ -> fail "Error - if yielded other value than bool"
+evalIf _ = fail "evalIf compr is not an ACIf"
 
 helper :: [Expr] -> SubsM Value
 helper [] = return $ ArrayVal []
@@ -201,27 +187,8 @@ applyPrimitive pr val = case val of
                     Left err -> fail err
                     Right res -> return res
  _ -> fail "Error applyPrimitive expects an ArrayVal"
- 
--- eval (Var ident) ctx = getVar ident ctx
-
--- eval (Call funName exprs) ctx@(env, penv) = case (getFunction funName ctx) of
---                         Left error -> Left error
-                        -- Right f -> f $ getArrayVal $ getRightVal $ eval (Array exprs) ctx
 
 runExpr :: Expr -> Either Error Value
 runExpr expr = case (runSubsM $ evalExpr expr) initialContext of
   Left err -> Left err
   Right (val, _) -> Right val
-
-
-
-
-env :: Map Ident Value
-env = Map.fromList [("x", IntVal 1), ("y", StringVal "myString")]
-
-penv :: Map FunName Primitive
-penv = Map.fromList [("*", mkArray), ("+", mkArray)]
-
-context = (env, penv)
-
-
