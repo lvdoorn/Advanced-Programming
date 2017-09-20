@@ -41,3 +41,4 @@ test-suite test-Assignment2
                       , hspec
                       , QuickCheck
                       , Assignment2
+                      , containers
