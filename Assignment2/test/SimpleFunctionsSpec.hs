@@ -4,26 +4,57 @@ import Test.Hspec
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 
+import Control.Monad
+
+import Data.Map
+
 import SubsInterpreter
 import SubsAst
 
 instance Arbitrary Expr where
-  arbitrary = do
-    x <- arbitrary
-    y <- arbitrary
-    z1 <- arbitrary
-    z2 <- arbitrary
-    -- oneof [return $ Number x, return TrueConst, return FalseConst]
-    oneof $ return `map` [Number x,
-                          TrueConst,
-                          FalseConst,
-                          Undefined,
-                          String y,
-                          Var y,
-                          Assign y z1,
-                          Array [z1],
-                          Array [],
-                          Comma z1 z2]
+  arbitrary = sized expr'
+    where expr' 0 = oneof [liftM Number arbitrary,
+                           liftM String arbitrary,
+                           return Undefined,
+                           return TrueConst,
+                           return FalseConst,
+                           liftM Var arbitrary
+                           ]
+          expr' n | n>0 = oneof [
+            liftM Number arbitrary,
+            liftM String arbitrary,
+            return TrueConst,
+            return Undefined,
+            return FalseConst,
+            liftM Var arbitrary,
+            liftM2 Comma subexpr subexpr,
+            -- liftM Array listexpr,
+            liftM2 Assign arbitrary subexpr]
+            where subexpr = expr' (n `div` 2)
+                  -- listexpr = [subexpr, subexpr]
+    -- x <- arbitrary
+    -- y <- arbitrary
+    -- z1 <- arbitrary
+    -- z2 <- arbitrary
+    -- -- oneof [return $ Number x, return TrueConst, return FalseConst]
+    -- oneof $ return `map` [Number x,
+    --                       TrueConst,
+    --                       FalseConst,
+    --                       Undefined,
+    --                       String y,
+    --                       Var y,
+    --                       Assign y z1,
+    --                       Array [z1],
+    --                       Array [],
+    --                       Comma z1 z2]
+
+-- expr = sized expr'
+-- expr' 0 = oneof [liftM Number arbitrary]
+-- expr' n | n>0 = 
+--   oneof [liftM Number arbitrary,
+--          liftM2 Comma subexpr subexpr]
+--   where subexpr = expr' (n `div` 2)
+
 prop_number :: Int -> Bool
 prop_number x = runExpr (Number x) == Right (IntVal x)
 

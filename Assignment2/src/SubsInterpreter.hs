@@ -23,7 +23,7 @@ import SubsAst
 import Control.Monad
 import qualified Data.Map as Map
 import Data.Map(Map)
-
+import Debug.Trace
 
 -- | A value is either an integer, the special constant undefined,
 --   true, false, a string, or an array of values.
@@ -70,6 +70,7 @@ productPrimitive [IntVal n, IntVal m] = Right $ IntVal (n * m)
 productPrimitive _ = Left "(*) called with wrong number or type of arguments"
 
 modPrimitive :: Primitive
+modPrimitive [IntVal _, IntVal 0] = Left "Divide by zero"
 modPrimitive [IntVal n, IntVal m] = Right $ IntVal (n `mod` m)
 modPrimitive _ = Left "(%) called with wrong number or type of arguments"
 
@@ -141,7 +142,6 @@ evalExpr FalseConst = return FalseVal
 evalExpr (Array []) = return $ ArrayVal []
 evalExpr (Array exprs) = helper exprs
 evalExpr (Var s) = getVar s
-
 evalExpr (Call func exprs) = do primitiveFunc <- getFunction func
                                 arrayValExprs <- evalExpr (Array exprs)
                                 applyPrimitive primitiveFunc arrayValExprs
@@ -149,6 +149,45 @@ evalExpr (Assign ident expr) = do exprVal <- evalExpr expr
                                   _ <- putVar ident exprVal
                                   return exprVal
 evalExpr (Comma expr1 expr2) = evalExpr expr1 >> evalExpr expr2
+evalExpr (Compr compr) = evalCompr compr
+
+evalCompr :: ArrayCompr -> SubsM Value
+evalCompr (ACBody expr) = evalExpr expr
+evalCompr (ACFor id expr compr) = do arr <- evalExpr expr
+                                     func id arr compr
+
+-- Assume if only occurs after at least one for
+evalCompr (ACIf expr compr) = do res <- evalExpr expr
+                                 case res of
+                                    TrueVal -> evalCompr compr
+                                    FalseVal -> return $ ArrayVal []
+                                    _ -> fail "Not a boolean"
+
+func :: Ident -> Value -> ArrayCompr -> SubsM Value
+func i (ArrayVal []) compr = return $ ArrayVal []
+func i (ArrayVal arr) compr = do
+                      _ <- putVar i (head arr)
+                      case compr of
+                        ACIf expr c -> do res <- evalIf $ ACIf expr c
+                                          ArrayVal list <- func i (ArrayVal (tail arr)) compr
+                                          return $ ArrayVal $ res ++ list
+                        _ -> do res <- evalCompr compr
+                                ArrayVal list <- func i (ArrayVal (tail arr)) compr
+                                return $ ArrayVal $ res:list
+
+evalIf :: ArrayCompr -> SubsM [Value]
+evalIf (ACIf expr compr) = do res <- evalExpr expr
+                              ret <- evalCompr compr
+                              case (trace ("found res: " ++ show res) res) of
+                                TrueVal -> return [ret]
+                                FalseVal -> return []
+-- func i (StringVal []) compr = return $ StringVal []
+-- func i (StringVal arr) compr = do
+--                       _ <- putVar i (StringVal [(head arr)])
+--                       res <- evalCompr compr
+--                       StringVal list <- func i (StringVal (tail arr)) compr
+--                       return $ StringVal $ res:list
+
 
 helper :: [Expr] -> SubsM Value
 helper [] = return $ ArrayVal []
@@ -184,3 +223,5 @@ penv :: Map FunName Primitive
 penv = Map.fromList [("*", mkArray), ("+", mkArray)]
 
 context = (env, penv)
+
+

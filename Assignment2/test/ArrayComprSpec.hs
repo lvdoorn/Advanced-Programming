@@ -31,9 +31,22 @@ spec = do
     it "evaluates a simple ACBody" $ do
       (runExpr (Compr (ACBody (Number 1)))) `shouldBe` (Right (IntVal 1))
 
-  describe "Simple ACIf" $ do
+  describe "Simple ACIf true" $ do
     it "evaluates an AC with if" $ do
       (runExpr (Compr (ACIf TrueConst (ACBody (Number 1))))) `shouldBe` (Right (IntVal 1))
+
+  describe "Only evens" $ do
+    it "generates even number 0-8" $ do
+      (runExpr (Comma (Assign "xs"
+                  (Array [Number 0, Number 1, Number 2, Number 3, Number 4,
+                    Number 5, Number 6, Number 7, Number 8, Number 9]))(Compr
+                  (ACFor "x" (Var "xs")
+                        (ACIf (Call "===" [Call "%" [Var "x", Number 2],
+                          Number 0])
+                        (ACBody (Var "x")))))))
+      `shouldBe`
+        Right (ArrayVal [IntVal 0, IntVal 2,IntVal 4,IntVal 6,IntVal 8])
+          
 
   describe "Simple ACFor" $ do
     it "evaluates an AC with for" $ do
@@ -48,3 +61,12 @@ spec = do
         `shouldBe`
         (Right
           (ArrayVal [(IntVal 0), (IntVal 1), (IntVal 4), (IntVal 9), (IntVal 16), (IntVal 25), (IntVal 36), (IntVal 49), (IntVal 64), (IntVal 81)]))
+  
+  describe "Scope test" $ do
+    it "evaluates the scope example" $ do
+      (runExpr (Comma (Assign "x" (Number 42))
+                (Comma (Assign "y" (Compr (ACFor "x" (Array [Number 1, Number 2, Number 3])
+                                          (ACBody (Var "x")))))
+                  (Array [Var "x", Var "y"]))))
+      `shouldBe`
+      (Right (ArrayVal [IntVal 42, ArrayVal [IntVal 1, IntVal 2, IntVal 3]]))

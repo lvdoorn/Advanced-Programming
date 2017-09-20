@@ -43,8 +43,8 @@ prop_product_err_type x = runExpr (Call "*" [(TrueConst), (Number x)]) == Left "
 prop_product_err_amount :: Int -> Int -> Int -> Bool
 prop_product_err_amount x y z = runExpr (Call "*" [(Number x), (Number y), (Number z)]) == Left "(*) called with wrong number or type of arguments"
 
-prop_mod_correct :: Int -> Int -> Bool
-prop_mod_correct x y = runExpr (Call "%" [Number x, Number y]) == Right (IntVal (x `mod` y))
+prop_mod_correct :: Int -> NonZero Int -> Bool
+prop_mod_correct x yin = let y = getNonZero yin in runExpr (Call "%" [Number x, Number y]) == Right (IntVal (x `mod` y))
 
 prop_mod_err_type :: Int -> Bool
 prop_mod_err_type x = runExpr (Call "%" [(TrueConst), (Number x)]) == Left "(%) called with wrong number or type of arguments"
