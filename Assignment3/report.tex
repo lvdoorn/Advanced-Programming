@@ -12,7 +12,7 @@
 
 
 \section{Parser Combinator Library}
-
+We have chosen to use the parser combinator library \texttt{parsec}. This choice is mainly motivated by the large amount of support available for \texttt{parsec} compared to \texttt{readP}. A Google search for ``haskell parsec" returns about 311.000 results, where a search for ``haskell readP" returns only 15.800 results. Furthermore, on StackOverflow, ``haskell readP" returns 8 results, compared to 1.360 for ``haskell parsec".
 
 \section{Final Grammar}
 % https://tex.stackexchange.com/questions/24886/which-package-can-be-used-to-write-bnf-grammars
@@ -33,17 +33,37 @@
 	\alt `false'
 	\alt `undefined'
 	\alt Ident
-	\alt Expr1 `+' Expr1
-	\alt Expr1 `-' Expr1
-	\alt Expr1 `*' Expr1
-	\alt Expr1 `\%' Expr1
-	\alt Expr1 `<' Expr1
-	\alt Expr1 `===' Expr1
-	\alt Ident `=' Expr1
+	\alt Factor
+	\alt Term
+	\alt Comparable
+	\alt Assignable
+	\alt Ident `=' Assignable
 	\alt Ident `(' Exprs `)'
 	\alt `[' Exprs `]'
 	\alt `[' ArrayFor `]'
 	\alt `(' Expr `)'
+		
+	<Factor> ::= Number
+	\alt Ident
+	\alt `(' Expr `)'
+	
+	<Term> ::= Factor
+	\alt Term `ProdOp' Factor
+	
+	<ProdOp> ::= `*'
+	\alt `\%'
+	
+	<Comparable> ::= Term
+	\alt Comparable `AddOp' Term
+	
+	<AddOp> ::= `+'
+	\alt `-'
+	
+	<Assignable> ::= Comparable
+	\alt Assignable `CompOp' Comparable	
+	
+	<CompOp> ::= `<'
+	\alt `==='
 	
 	<Exprs> ::= $\varepsilon$
 	\alt Expr1 CommaExprs	
