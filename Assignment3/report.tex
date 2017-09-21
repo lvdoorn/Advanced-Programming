@@ -1,5 +1,7 @@
 \documentclass{article}
 
+\usepackage{syntax}
+
 \title{Advanced Programming Assignment 2 Report}
 \author{Mihai Popovici \texttt{MTF422} \and Leendert van Doorn \texttt{XBT504}}
 
@@ -9,6 +11,71 @@
 
 
 
+\section{Parser Combinator Library}
+
+
+\section{Final Grammar}
+% https://tex.stackexchange.com/questions/24886/which-package-can-be-used-to-write-bnf-grammars
+
+\begin{grammar}
+	<Expr> ::= Expr `,' Expr
+	\alt Expr1
+	
+	<Expr1> ::= Number
+	\alt String
+	\alt `true'
+	\alt `false'
+	\alt `undefined'
+	\alt Ident
+	\alt Expr1 `+' Expr1
+	\alt Expr1 `-' Expr1
+	\alt Expr1 `*' Expr1
+	\alt Expr1 `\%' Expr1
+	\alt Expr1 `<' Expr1
+	\alt Expr1 `===' Expr1
+	\alt Ident `=' Expr1
+	\alt Ident `(' Exprs `)'
+	\alt `[' Exprs `]'
+	\alt `[' ArrayFor `]'
+	\alt `(' Expr `)'
+	
+	<Exprs> ::= $\varepsilon$
+	\alt Expr1 CommaExprs	
+	
+	<CommaExprs> ::= $\varepsilon$
+	\alt `,' Expr1 CommaExprs
+	
+	<ArrayFor> ::= `for' `(' Ident `of' Expr1 `)' ArrayCompr
+	
+	<ArrayIf> ::= `if' `(' Expr1 `)' ArrayCompr
+	
+	<ArrayCompr> ::= Expr1
+	\alt ArrayFor
+	\alt ArrayIf
+	
+	<Ident> ::= (see below)
+	
+	<Number> ::= (see below)
+	
+	<String> ::= (see below)
+\end{grammar}
+
+
+\section{Handling of Whitespace}
+
+
+\section{Capabilities of Implementation}
+
+
+\section{Assessment of Implementation}
+\subsection{Objective Assessment}
+
+
+\subsection{Value Judgement}
+
+
+\section{How to Run the Code}
+To run our code, execute \texttt{stack install} followed by \texttt{stack test} in the top level \texttt{src} directory.
 
 
 
