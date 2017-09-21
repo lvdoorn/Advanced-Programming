@@ -17,10 +17,16 @@
 \section{Final Grammar}
 % https://tex.stackexchange.com/questions/24886/which-package-can-be-used-to-write-bnf-grammars
 
+\setlength{\grammarparsep}{4pt plus 1pt minus 1pt} % increase separation between rules
+\setlength{\grammarindent}{9em} % increase separation between LHS/RHS 
+
 \begin{grammar}
+	\let\syntleft\relax
+	\let\syntright\relax
+	
 	<Expr> ::= Expr `,' Expr
 	\alt Expr1
-	
+
 	<Expr1> ::= Number
 	\alt String
 	\alt `true'
