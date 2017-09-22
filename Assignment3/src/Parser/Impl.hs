@@ -1,4 +1,10 @@
-module Parser.Impl where
+module Parser.Impl (
+  parseString,
+  ParseError
+
+
+
+  ) where
 
 import SubsAst
 
