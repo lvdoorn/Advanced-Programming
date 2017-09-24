@@ -44,20 +44,27 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 	\alt `undefined'
 	\alt `(' Expr `)'
 	
-	<Term> ::= Factor
-	\alt Term `ProdOp' Factor
+	<Term> ::= Factor Term'
+	
+	<Term'> ::= `ProdOp' Factor Term'
+	\alt $\varepsilon$
 	
 	<ProdOp> ::= `*'
 	\alt `\%'
 	
-	<Comparable> ::= Term
-	\alt Comparable `AddOp' Term
+	<Comparable> ::= Term Comparable'
+	
+	<Comparable'> ::= `AddOp' Term Comparable'
+	\alt $\varepsilon$
 	
 	<AddOp> ::= `+'
 	\alt `-'
 	
-	<Assignable> ::= Comparable
-	\alt Assignable `CompOp' Comparable	
+	<Assignable> ::= Comparable Assignable'
+	
+	<Assignable'> ::= `CompOp' Comparable Assignable'
+	\alt $\varepsilon$
+	
 	
 	<CompOp> ::= `<'
 	\alt `==='
