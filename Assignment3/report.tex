@@ -12,7 +12,7 @@
 
 
 \section{Parser Combinator Library}
-We have chosen to use the parser combinator library \texttt{parsec}. This choice is mainly motivated by the large amount of support available for \texttt{parsec} compared to \texttt{readP}. A Google search for ``haskell parsec" returns about 311.000 results, where a search for ``haskell readP" returns only 15.800 results. Furthermore, on StackOverflow, ``haskell readP" returns 8 results, compared to 1.360 for ``haskell parsec".
+We have chosen to use the parser combinator library \texttt{parsec}. This choice is mainly motivated by the large amount of support available for \texttt{parsec} compared to \texttt{readP}. A Google search for ``haskell parsec" returns about 311.000 results, whereas a search for ``haskell readP" returns only 15.800 results. Furthermore, on StackOverflow, ``haskell readP" returns 8 results, compared to 1.360 for ``haskell parsec".
 
 \section{Final Grammar}
 % https://tex.stackexchange.com/questions/24886/which-package-can-be-used-to-write-bnf-grammars
@@ -24,8 +24,10 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 	\let\syntleft\relax
 	\let\syntright\relax
 	
-	<Expr> ::= Expr1 `,' Expr
-	\alt Expr1
+	<Expr> ::= Expr1 Expr'
+	
+	<Expr'> ::= `,' Expr
+	\alt $\varepsilon$
 
 	<Expr1> ::= Factor
 	\alt Term
@@ -69,8 +71,10 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 	<CompOp> ::= `<'
 	\alt `==='
 	
-	<Assignment> ::= Ident `=' Expr1
-	\alt Ident `=' Assignment %%% a = b = 1
+	<Assignment> ::= Ident `=' Assignment'
+	
+	<Assignment'> ::= Expr1
+	\alt Assignment
 	
 	<Exprs> ::= $\varepsilon$
 	\alt Expr1 CommaExprs	
