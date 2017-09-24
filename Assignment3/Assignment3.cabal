@@ -39,5 +39,6 @@ test-suite test-Assignment3
   Main-Is:              Spec.hs
   Build-Depends:        base
                       , hspec
-                      , QuickCheck
+                      , QuickCheck >= 2.10
+                      , parsec
                       , Assignment3
