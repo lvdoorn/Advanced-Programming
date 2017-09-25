@@ -1,7 +1,6 @@
 module Parser.Impl (
   parseString,
   ParseError,
-  number,
   posNumber,
   negNumber,
   number,

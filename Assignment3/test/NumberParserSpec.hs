@@ -6,10 +6,12 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Parser.Impl
 
-import Data.Char
-
 import SubsAst
-import Control.Monad
+
+-- TODO: create int type between -99999999 and 99999999
+-- newtype SubScriptInt = SubScriptInt Int
+-- instance Arbitrary SubScriptInt where
+--   arbitrary = ...
 
 -- Number tests --
 prop_pos_number :: NonNegative Int -> Bool
