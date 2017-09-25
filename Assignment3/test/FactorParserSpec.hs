@@ -38,3 +38,8 @@ spec = do
     it "parses an expression in parentheses" $
       (parse factorParser "" "(1)") `shouldBe`
       (Right $ Number 1)
+
+    it "parses a multiline string" $
+      (parse factorParser "" "\'foo\\\nbar\'") `shouldBe`-- 'foo\
+                                                         --   bar'
+      (Right $ String "foobar")

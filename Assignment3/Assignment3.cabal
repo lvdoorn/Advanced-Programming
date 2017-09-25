@@ -35,6 +35,8 @@ test-suite test-Assignment3
                       , NumberParserSpec
                       , SimpleEndToEndSpec
                       , StringParserSpec
+                      , FactorParserSpec
+                      , OperatorFreeSpec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       test

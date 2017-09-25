@@ -1,22 +1,22 @@
 module Parser.Impl (
-  parseString,
-  ParseError,
-  posNumber,
-  negNumber,
-  number,
-  getBackslashChar,
-  parseNewline,
-  isValid,
-  parseChar,
-  backslash,
-  stringParser,
-  parse,
-  whitespace,
-  parseTrue,
-  parseFalse,
-  parseUndefined,
-  factorParser,
-  parseIdent
+    parseString
+  , ParseError
+  , posNumber
+  , negNumber
+  , number
+  , getBackslashChar
+  , parseNewline
+  , isValid
+  , parseChar
+  , backslash
+  , stringParser
+  , parse
+  , whitespace
+  , parseTrue
+  , parseFalse
+  , parseUndefined
+  , factorParser
+  , parseIdent
   ) where
 
 import SubsAst
@@ -98,24 +98,27 @@ parseChar = do
 
 -- Parses a string constant
 stringParser :: Parser Expr
-stringParser = do
+stringParser = whitespace $ do
   _ <- (char '\'')
   str <- many parseChar
   _ <- (char '\'')
   return $ String str
 
+-- Parses the `true' keyword
 parseTrue :: Parser Expr
-parseTrue = do
+parseTrue = whitespace $ do
   string "true"
   return TrueConst
 
+-- Parses the `false' keyword
 parseFalse :: Parser Expr
-parseFalse = do
+parseFalse = whitespace $ do
   string "false"
   return FalseConst
 
+-- Parses the `undefined' keyword
 parseUndefined :: Parser Expr
-parseUndefined = do
+parseUndefined = whitespace $ do
   string "undefined"
   return Undefined
 
@@ -127,22 +130,13 @@ parentheses = undefined
 variable :: Parser Expr
 variable = undefined
 
--- TODO: Uniform naming conventions for parsers
--- Parses a factor as specified in the grammar
-factorParser :: Parser Expr
-factorParser = do choice [ number,
-                           --variable,
-                           stringParser,
-                           parseTrue, 
-                           parseFalse,
-                           parseUndefined
-                           --,parentheses
-                         ]
+
 keywords :: [String]
 keywords = ["true", "false", "undefined", "for", "of", "if"]
 
+-- Parses an identifier
 parseIdent :: Parser Expr
-parseIdent = do
+parseIdent = whitespace $ do
     fc <- firstChar
     rest <- many nonFirstChar
     let inputId = fc:rest 
@@ -151,3 +145,16 @@ parseIdent = do
   where
     firstChar = letter
     nonFirstChar = digit <|> firstChar <|> char '_'
+
+-- TODO: Uniform naming conventions for parsers
+-- Parses a factor as specified in the grammar
+factorParser :: Parser Expr
+factorParser = whitespace $
+                  choice [ number
+                         , stringParser
+                         , parseTrue
+                         , parseFalse
+                         , parseUndefined
+                         , parseIdent
+                         -- , parentheses
+                         ]
