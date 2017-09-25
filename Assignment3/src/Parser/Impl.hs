@@ -15,8 +15,8 @@ module Parser.Impl (
   parseTrue,
   parseFalse,
   parseUndefined,
-  factorParser
-
+  factorParser,
+  parseIdent
   ) where
 
 import SubsAst
@@ -138,3 +138,16 @@ factorParser = do choice [ number,
                            parseUndefined
                            --,parentheses
                          ]
+keywords :: [String]
+keywords = ["true", "false", "undefined", "for", "of", "if"]
+
+parseIdent :: Parser Expr
+parseIdent = do
+    fc <- firstChar
+    rest <- many nonFirstChar
+    let inputId = fc:rest 
+    if inputId `notElem` keywords then return (Var inputId) 
+                                  else fail "should not be a keyword"
+  where
+    firstChar = letter
+    nonFirstChar = digit <|> firstChar <|> char '_'
