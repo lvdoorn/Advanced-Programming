@@ -10,14 +10,15 @@ module Parser.Impl (
   parseChar,
   backslash,
   stringParser,
-  parse
+  parse,
+  whitespace
 
   ) where
 
 import SubsAst
 
 import Text.Parsec
-import Text.Parsec.Prim
+import Text.Parsec.Prim hiding (token)
 import Text.Parsec.Char
 import Text.Parsec.String
 import Text.Parsec.Combinator
@@ -26,6 +27,13 @@ import Data.Char
 
 parseString :: String -> Either ParseError Expr
 parseString = undefined
+
+-- Copied from slide 14 of second parser lecture
+whitespace :: Parser a -> Parser a
+whitespace p = do res <- p
+                  spaces
+                  return res
+
 
 -- Parses a positive number
 posNumber :: Parser Expr
@@ -43,7 +51,7 @@ negNumber = do
 -- TODO: Eight digit limit on numbers
 -- Parses any number
 number :: Parser Expr
-number = negNumber <|> posNumber
+number = whitespace $ negNumber <|> posNumber
 
 -- TODO: newlines
 

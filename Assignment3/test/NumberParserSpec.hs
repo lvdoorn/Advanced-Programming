@@ -34,3 +34,8 @@ spec = do
 
   describe "number" $ do
     prop "parses negative and positive numbers" $ prop_any_number
+
+  describe "number" $ do
+    it "parses a number surrounded by whitespace" $
+      (parse number "fail" "3      ") `shouldBe`
+      (Right $ Number 3)
