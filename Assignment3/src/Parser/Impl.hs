@@ -11,7 +11,8 @@ module Parser.Impl (
   parseChar,
   backslash,
   stringParser,
-  parse
+  parse,
+  parseIdent
 
   ) where
 
@@ -92,3 +93,17 @@ stringParser = do
   str <- many parseChar
   _ <- (char '\'')
   return $ String str
+
+keywords :: [String]
+keywords = ["true", "false", "undefined", "for", "of", "if"]
+
+parseIdent :: Parser Expr
+parseIdent = do
+    fc <- firstChar
+    rest <- many nonFirstChar
+    let inputId = fc:rest 
+    if inputId `notElem` keywords then return (Var inputId) 
+                                  else fail "should not be a keyword"
+  where
+    firstChar = letter
+    nonFirstChar = digit <|> firstChar <|> char '_'
