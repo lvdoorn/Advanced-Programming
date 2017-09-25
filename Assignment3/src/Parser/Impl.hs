@@ -11,7 +11,11 @@ module Parser.Impl (
   backslash,
   stringParser,
   parse,
-  whitespace
+  whitespace,
+  parseTrue,
+  parseFalse,
+  parseUndefined,
+  factorParser
 
   ) where
 
@@ -99,3 +103,38 @@ stringParser = do
   str <- many parseChar
   _ <- (char '\'')
   return $ String str
+
+parseTrue :: Parser Expr
+parseTrue = do
+  string "true"
+  return TrueConst
+
+parseFalse :: Parser Expr
+parseFalse = do
+  string "false"
+  return FalseConst
+
+parseUndefined :: Parser Expr
+parseUndefined = do
+  string "undefined"
+  return Undefined
+
+-- TODO
+parentheses :: Parser Expr
+parentheses = undefined
+
+-- TODO
+variable :: Parser Expr
+variable = undefined
+
+-- TODO: Uniform naming conventions for parsers
+-- Parses a factor as specified in the grammar
+factorParser :: Parser Expr
+factorParser = do choice [ number,
+                           --variable,
+                           stringParser,
+                           parseTrue, 
+                           parseFalse,
+                           parseUndefined
+                           --,parentheses
+                         ]
