@@ -8,9 +8,6 @@
 \begin{document}
 \maketitle
 
-
-
-
 \section{Parser Combinator Library}
 We have chosen to use the parser combinator library \texttt{parsec}. This choice is mainly motivated by the large amount of support available for \texttt{parsec} compared to \texttt{readP}. A Google search for ``haskell parsec" returns about 311.000 results, whereas a search for ``haskell readP" returns only 15.800 results. Furthermore, on StackOverflow, ``haskell readP" returns 8 results, compared to 1.360 for ``haskell parsec".
 
@@ -99,7 +96,7 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 
 
 \section{Handling of Whitespace}
-
+We have chosen the solution of skipping whitespace after each token and at the very beginning, as was recommended in the lecture.
 
 \section{Capabilities of Implementation}
 
@@ -112,7 +109,7 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 
 
 \section{How to Run the Code}
-To run our code, execute \texttt{stack install} followed by \texttt{stack test} in the top level \texttt{src} directory.
+To run our code, execute \texttt{stack setup}, \texttt{stack install} and \texttt{stack test} in the top level \texttt{src} directory.
 
 
 

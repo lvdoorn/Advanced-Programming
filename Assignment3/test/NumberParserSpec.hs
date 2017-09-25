@@ -6,10 +6,12 @@ import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Parser.Impl
 
-import Data.Char
-
 import SubsAst
-import Control.Monad
+
+-- TODO: create int type between -99999999 and 99999999
+-- newtype SubScriptInt = SubScriptInt Int
+-- instance Arbitrary SubScriptInt where
+--   arbitrary = ...
 
 -- Number tests --
 prop_pos_number :: NonNegative Int -> Bool
@@ -32,3 +34,8 @@ spec = do
 
   describe "number" $ do
     prop "parses negative and positive numbers" $ prop_any_number
+
+  describe "number" $ do
+    it "parses a number surrounded by whitespace" $
+      (parse number "fail" "3      ") `shouldBe`
+      (Right $ Number 3)

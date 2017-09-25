@@ -32,6 +32,9 @@ library
 
 test-suite test-Assignment3
   other-modules:	SimpleInputsSpec
+                      , NumberParserSpec
+                      , SimpleEndToEndSpec
+                      , StringParserSpec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       test

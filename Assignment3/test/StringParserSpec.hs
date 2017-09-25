@@ -9,7 +9,6 @@ import Parser.Impl
 import Data.Char
 
 import SubsAst
-import Control.Monad
 
 newtype BackslashChar = BackslashChar Char deriving (Show, Eq)
 instance Arbitrary BackslashChar where
