@@ -1,27 +1,32 @@
 module NumberParserSpec (spec) where
 
 import Test.Hspec
-import Test.QuickCheck.Modifiers
 import Test.Hspec.QuickCheck
 import Test.QuickCheck
 import Parser.Impl
+import Control.Monad
 
 import SubsAst
 
--- TODO: create int type between -99999999 and 99999999
--- newtype SubScriptInt = SubScriptInt Int
--- instance Arbitrary SubScriptInt where
---   arbitrary = ...
+newtype PositiveIntGen = PositiveIntGen Int deriving (Eq, Show)
+
+instance Arbitrary PositiveIntGen where
+    arbitrary = PositiveIntGen `liftM` (choose (0, 99999999))
+
+newtype IntGen = IntGen Int deriving (Eq, Show)
+
+instance Arbitrary IntGen where
+    arbitrary = IntGen `liftM` (choose (-99999999, 99999999))
 
 -- Number tests --
-prop_pos_number :: NonNegative Int -> Bool
-prop_pos_number x = ((parse posNumber "fail" (show (getNonNegative x))) == (Right $ Number $ getNonNegative x))
+prop_pos_number :: PositiveIntGen -> Bool
+prop_pos_number (PositiveIntGen x) = ((parse posNumber "fail" (show (x))) == (Right $ Number $ x))
 
-prop_neg_number :: NonNegative Int -> Bool
-prop_neg_number x = ((parse negNumber "fail" ("-" ++ (show (getNonNegative x)))) == (Right $ Number $ (getNonNegative x) * (-1)))
+prop_neg_number :: PositiveIntGen -> Bool
+prop_neg_number (PositiveIntGen x) = ((parse negNumber "fail" ("-" ++ (show (x)))) == (Right $ Number $ (x) * (-1)))
 
-prop_any_number :: Int -> Bool
-prop_any_number x = ((parse number "fail" (show x)) == (Right $ Number x))
+prop_any_number :: IntGen -> Bool
+prop_any_number (IntGen x) = ((parse number "fail" (show x)) == (Right $ Number x))
 
 
 spec :: Spec
