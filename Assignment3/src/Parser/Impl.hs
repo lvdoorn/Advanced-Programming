@@ -33,7 +33,7 @@ import Text.Parsec.Combinator
 import Data.Char
 
 parseString :: String -> Either ParseError Expr
-parseString str = parse parseExpr "fail" str
+parseString str = do parse (whitespace $ parseExpr) "fail" str
 
 -- Copied from slide 14 of second parser lecture
 whitespace :: Parser a -> Parser a
@@ -236,30 +236,42 @@ parseAssignment' :: Expr -> Parser Expr
 parseAssignment' input = undefined
 
 parseComma :: Parser Char
-parseComma = char ','
+parseComma = whitespace $ char ','
 
 parseExpr :: Parser Expr
 parseExpr = do
-  expr1 <- parseExpr1
+  expr1 <- whitespace $ parseExpr1
   parseExpr' expr1
 
 parseExpr' :: Expr -> Parser Expr
 parseExpr' input = (do _ <- parseComma
-                       rest <- parseExpr
+                       rest <- whitespace $ parseExpr
                        return $ Comma input rest)
                <|> return input
 
 parseExpr1 :: Parser Expr
 parseExpr1 = choice [ parseAssignable
                     , parseAssignment
-                    -- , parseFunctionCall
-                    -- , parseArray
+                    , parseFunctionCall
+                    , parseArray
                     -- , parseArrayFor -- with Compr
                     ]
 
--- parseFunctionCall :: Parser Expr
--- parseFunctionCall = do ident <- parseIdent
+parseFunctionCall :: Parser Expr
+parseFunctionCall = do Var ident <- parseIdent
+                       _ <- char '('
+                       args <- parseExprs
+                       _ <- char ')'
+                       return $ Call ident args
 
+parseArray :: Parser Expr
+parseArray = do _ <- char '['
+                exprs <- parseExprs
+                _ <- char ']'
+                return $ Array exprs
+
+-- parseArrayArrayFor :: Parser Expr
+-- parseArrayArrayFor = 
 
 parseFor :: Parser String
 parseFor = string "for"
@@ -298,8 +310,8 @@ parseOf = string "of"
 
 
 -- TODO combine with array parsing
--- parseExprs :: Parser Expr
--- parseExprs = do
+parseExprs :: Parser [Expr]
+parseExprs = undefined
 --   expr1 <- parseExpr1
 --   parseCommaExprs expr1
 
