@@ -38,6 +38,14 @@ spec = do
       (parseString "x") `shouldBe`
       (Right $ Var "x")
 
+    it "parses an empty array" $
+      (parseString "[]") `shouldBe`
+      (Right $ Array [])
+
+    it "parses an array with one element" $
+      (parseString "[1]") `shouldBe`
+      (Right $ Array [Number 1])
+
     it "parses an array of expressions" $
       (parseString "[1, 2, 3]") `shouldBe`
       (Right $ Array [Number 1, Number 2, Number 3])

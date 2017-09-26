@@ -33,7 +33,12 @@ import Text.Parsec.Combinator
 import Data.Char
 
 parseString :: String -> Either ParseError Expr
-parseString str = do parse (whitespace $ parseExpr) "fail" str
+parseString str = parse (stripLeadingWhitespace parseExpr) "fail" str
+
+stripLeadingWhitespace :: Parser a -> Parser a
+stripLeadingWhitespace p = do spaces
+                              res <- p
+                              return res;
 
 -- Copied from slide 14 of second parser lecture
 whitespace :: Parser a -> Parser a
@@ -265,9 +270,9 @@ parseFunctionCall = do Var ident <- parseIdent
                        return $ Call ident args
 
 parseArray :: Parser Expr
-parseArray = do _ <- char '['
-                exprs <- parseExprs
-                _ <- char ']'
+parseArray = do _ <- whitespace $ char '['
+                exprs <- whitespace $ parseExprs
+                _ <- whitespace $ char ']'
                 return $ Array exprs
 
 -- parseArrayArrayFor :: Parser Expr
@@ -311,11 +316,27 @@ parseOf = string "of"
 
 -- TODO combine with array parsing
 parseExprs :: Parser [Expr]
-parseExprs = undefined
---   expr1 <- parseExpr1
---   parseCommaExprs expr1
+parseExprs = do expr1 <- whitespace $ parseExpr1
+                parseCommaExprs expr1
+         <|> return []
 
--- parseCommaExprs :: Expr -> Parser Expr
--- parseCommaExprs input = do _ <- whitespace $ parseComma
---                            expr1 <- whitespace $ parseExpr1
---                            parseCommaExprs $ expr1
+parseCommaExprs :: Expr -> Parser [Expr]
+parseCommaExprs input = do _ <- parseComma
+                           tail <- whitespace $ parseExprs
+                           return (input:tail)
+                    <|> return [input]
+
+
+
+
+
+-- parseExpr :: Parser Expr
+-- parseExpr = do
+--   expr1 <- whitespace $ parseExpr1
+--   parseExpr' expr1
+
+-- parseExpr' :: Expr -> Parser Expr
+-- parseExpr' input = (do _ <- parseComma
+--                        rest <- whitespace $ parseExpr
+--                        return $ Comma input rest)
+--                <|> return input
