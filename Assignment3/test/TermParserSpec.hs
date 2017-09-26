@@ -26,6 +26,6 @@ spec = do
       (parse parseTerm "" "9*(x*5)") `shouldBe`
       Right (Call "*" [Number 9,Call "*" [Var "x",Number 5]])
 
-    it "parses ' 9 * ( x * 5 ) ', whitespaces term " $
-      (parse parseTerm "" " 9 * ( x * 5 ) ") `shouldBe`
+    it "parses '9 *( x *5 )', whitespaces term " $
+      (parse parseTerm "" "9 *( x *5 )") `shouldBe`
       Right (Call "*" [Number 9,Call "*" [Var "x",Number 5]])

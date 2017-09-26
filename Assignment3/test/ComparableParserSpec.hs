@@ -26,8 +26,8 @@ spec = do
       (parse parseComparable "" "9+(3-5)") `shouldBe`
       Right (Call "+" [Number 9,Call "-" [Number 3,Number 5]])
 
-    it "parses ' 9 + ( x - 5 ) ', whitespaces comp" $
-      (parse parseComparable "" " 9 + ( x - 5 ) ") `shouldBe`
+    it "parses '9 +( x -5 )', whitespaces comp" $
+      (parse parseComparable "" "9 +( x -5 )") `shouldBe`
       Right (Call "+" [Number 9,Call "-" [Var "x",Number 5]])
 
     it "parses 3*4+5*x, comp with term, check precedence" $

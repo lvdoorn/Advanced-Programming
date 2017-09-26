@@ -39,6 +39,7 @@ test-suite test-Assignment3
                       , OperatorFreeSpec
                       , TermParserSpec
                       , ComparableParserSpec
+                      , AssignableParserSpec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       test
