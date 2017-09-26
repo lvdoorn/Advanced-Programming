@@ -6,6 +6,7 @@ import Test.QuickCheck
 import Parser.Impl
 import Control.Monad
 
+import Data.Either
 import SubsAst
 
 newtype PositiveIntGen = PositiveIntGen Int deriving (Eq, Show)
@@ -28,6 +29,9 @@ prop_neg_number (PositiveIntGen x) = ((parse negNumber "fail" ("-" ++ (show (x))
 prop_any_number :: IntGen -> Bool
 prop_any_number (IntGen x) = ((parse number "fail" (show x)) == (Right $ Number x))
 
+prop_invalid_number :: Bool
+prop_invalid_number = isLeft (parse number "fail" "12asd")
+
 
 spec :: Spec
 spec = do
@@ -39,6 +43,9 @@ spec = do
 
   describe "number" $ do
     prop "parses negative and positive numbers" $ prop_any_number
+
+  describe "invalid number" $ do
+    prop "parses an invalid number" $ prop_invalid_number
 
   describe "number" $ do
     it "parses a number followed by whitespace" $
