@@ -26,10 +26,7 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 	<Expr'> ::= `,' Expr
 	\alt $\varepsilon$
 
-	<Expr1> ::= Factor
-	\alt Term
-	\alt Comparable
-	\alt Assignable
+	<Expr1> ::= Assignable
 	\alt Assignment
 	\alt Ident `(' Exprs `)'
 	\alt `[' Exprs `]'
