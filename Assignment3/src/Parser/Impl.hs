@@ -40,7 +40,7 @@ import Data.Char
 import Debug.Trace -- TODO: delete before handing in
 
 parseString :: String -> Either ParseError Expr
-parseString str = parse (stripLeadingWhitespace parseExpr) "fail" str
+parseString = parse (stripLeadingWhitespace parseExpr) "fail"
 
 
 
@@ -48,7 +48,7 @@ parseString str = parse (stripLeadingWhitespace parseExpr) "fail" str
 
 parentheses :: Parser Expr
 parentheses = do _ <- whitespace $ char '('
-                 expr <- whitespace $ parseExpr
+                 expr <- whitespace parseExpr
                  _ <- whitespace $ char ')'
                  return expr
 
@@ -114,12 +114,12 @@ parseAssignment' input = (do assignment <- parseAssignment
 
 parseExpr :: Parser Expr
 parseExpr = do
-  expr1 <- whitespace $ parseExpr1
+  expr1 <- whitespace parseExpr1
   parseExpr' expr1
 
 parseExpr' :: Expr -> Parser Expr
 parseExpr' input = (do _ <- parseComma
-                       rest <- whitespace $ parseExpr
+                       rest <- whitespace parseExpr
                        return $ Comma input rest)
                <|> return input
 
@@ -140,7 +140,7 @@ parseFunctionCall = do Var ident <- parseIdent
 
 parseArray :: Parser Expr
 parseArray = do _ <- whitespace $ char '['
-                exprs <- whitespace $ parseExprs
+                exprs <- whitespace parseExprs
                 _ <- whitespace $ char ']'
                 return $ Array exprs
 
@@ -153,11 +153,11 @@ parseArrayArrayFor = do _ <- whitespace $ char '['
 
 
 parseArrayFor :: Parser ArrayCompr
-parseArrayFor = do _ <- try $ whitespace $ parseFor
+parseArrayFor = do _ <- try $ whitespace parseFor
                    _ <- whitespace $ char '(' -- TODO replace with between combinator
-                   Var ident <- whitespace $ parseIdent
-                   _ <- whitespace $ parseOf
-                   expr1 <- whitespace $ parseExpr1
+                   Var ident <- whitespace parseIdent
+                   _ <- whitespace parseOf
+                   expr1 <- whitespace parseExpr1
                    _ <- whitespace $ char ')'
                    compr <- parseArrayCompr
                    return $ ACFor ident expr1 compr
@@ -165,9 +165,9 @@ parseArrayFor = do _ <- try $ whitespace $ parseFor
 
 
 parseArrayIf :: Parser ArrayCompr
-parseArrayIf = do _ <- whitespace $ parseIf
+parseArrayIf = do _ <- whitespace parseIf
                   _ <- whitespace $ char '('
-                  expr1 <- whitespace $ parseExpr1
+                  expr1 <- whitespace parseExpr1
                   _ <- whitespace $ char ')'
                   compr <- parseArrayCompr
                   return $ ACIf expr1 compr
@@ -185,13 +185,13 @@ parseACBody = do expr <- parseExpr1
 
 -- TODO combine with array parsing
 parseExprs :: Parser [Expr]
-parseExprs = do expr1 <- whitespace $ parseExpr1
+parseExprs = do expr1 <- whitespace parseExpr1
                 parseCommaExprs expr1
          <|> return []
 
 parseCommaExprs :: Expr -> Parser [Expr]
 parseCommaExprs input = do _ <- parseComma
-                           tail <- whitespace $ parseExprs
+                           tail <- whitespace parseExprs
                            return (input:tail)
                     <|> return [input]
 

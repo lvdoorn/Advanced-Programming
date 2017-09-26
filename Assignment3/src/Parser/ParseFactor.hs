@@ -31,14 +31,14 @@ import Data.Char
 posNumber :: Parser Expr
 posNumber = do
     n <- many1 digit
-    return $ Number $ (read n)
+    return $ Number $ read n
 
 -- Parses a negative number
 negNumber :: Parser Expr
 negNumber = do
-  _ <- (char '-')
+  _ <- char '-'
   n <- many1 digit
-  return $ Number $ ((read n) * (-1))
+  return $ Number (read n * (-1))
 
 -- TODO: Eight digit limit on numbers
 -- Parses any number
@@ -57,14 +57,14 @@ getBackslashChar c | c == 'n' = Right '\n'
 -- Parses a newline character after a backslash used to run a string over multiple lines
 parseNewline :: Parser ()
 parseNewline = do
-  a <- (char '\\')
-  b <- (char '\n') -- can be replaced by newline (parser)
+  a <- char '\\'
+  b <- char '\n' -- can be replaced by newline (parser)
   return ()
 
 -- Parses the backslash characters from SubScript
 backslash :: Parser Char
 backslash = do
-  _ <- (char '\\')
+  _ <- char '\\'
   c <- oneOf ['\'', 'n', 't', '\\', '\n']
   case getBackslashChar c of
     Right char -> return char
@@ -82,14 +82,14 @@ isValid c | c == '\'' = False
 parseChar :: Parser Char
 parseChar = do 
   _ <- optional parseNewline
-  backslash <|> (satisfy isValid)
+  backslash <|> satisfy isValid
 
 -- Parses a string constant
 stringParser :: Parser Expr
 stringParser = whitespace $ do
-  _ <- (char '\'')
+  _ <- char '\''
   str <- many parseChar
-  _ <- (char '\'')
+  _ <- char '\''
   return $ String str
 
 -- Parses the `true' keyword
