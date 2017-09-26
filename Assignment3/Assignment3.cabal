@@ -22,7 +22,9 @@ executable Assignment3
 
 library
   exposed-modules:     SubsParser, Parser.Impl, SubsAst
-  other-modules:       
+  other-modules:       Parser.ParseFactor
+                     , Parser.ParseAssignment
+                     , Parser.Utilities
   hs-source-dirs:      src
   default-language:    Haskell2010
   build-depends:       base >= 4.7 && < 5

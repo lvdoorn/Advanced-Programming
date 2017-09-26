@@ -31,3 +31,7 @@ spec = do
     it "parses a composite assignment with whitespace" $
       (parse parseAssignment "" "x = y = 5") `shouldBe`
       (Right $ Assign "x" $ Assign "y" $ Number 5)
+
+    it "parses \'<\' in an assignment with correct associativity" $
+      (parse parseAssignment "" "x = 5 < 6 < 7") `shouldBe`
+      Right (Assign "x" (Call "<" [Call "<" [Number 5,Number 6],Number 7]))

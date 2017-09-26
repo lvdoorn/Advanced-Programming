@@ -14,40 +14,40 @@ import Control.Monad
 
 spec :: Spec
 spec = do
-  describe "factorParser" $ do
+  describe "parseFactor" $ do
     it "parses \"true\"" $
-      (parse factorParser "" "true") `shouldBe`
+      (parse parseFactor "" "true") `shouldBe`
       (Right TrueConst)
 
     it "parses \"false\"" $
-      (parse factorParser "" "false") `shouldBe`
+      (parse parseFactor "" "false") `shouldBe`
       (Right FalseConst)
 
     it "parses \"undefined\"" $
-      (parse factorParser "" "undefined") `shouldBe`
+      (parse parseFactor "" "undefined") `shouldBe`
       (Right Undefined)
 
     it "parses a normal string" $
-      (parse factorParser "" "\'abcdefg123456\'") `shouldBe`
+      (parse parseFactor "" "\'abcdefg123456\'") `shouldBe`
       (Right $ String "abcdefg123456")
 
     it "parses a variable" $
-      (parse factorParser "" "x") `shouldBe`
+      (parse parseFactor "" "x") `shouldBe`
       (Right $ Var "x")
 
     it "parses an expression in parentheses" $
-      (parse factorParser "" "(1)") `shouldBe`
+      (parse parseFactor "" "(1)") `shouldBe`
       (Right $ Number 1)
 
     it "parses a multiline string" $
-      (parse factorParser "" "\'foo\\\nbar\'") `shouldBe`-- 'foo\
+      (parse parseFactor "" "\'foo\\\nbar\'") `shouldBe`-- 'foo\
                                                          --   bar'
       (Right $ String "foobar")
 
     it "parses a variable like a keyword" $
-      (parse factorParser "" "truex") `shouldBe`
+      (parse parseFactor "" "truex") `shouldBe`
       (Right $ Var "truex")
 
     it "parses an expression in parentheses with whitespace" $
-      (parse factorParser "" "(     5   )   ") `shouldBe`
+      (parse parseFactor "" "(     5   )   ") `shouldBe`
       (Right $ Number 5)
