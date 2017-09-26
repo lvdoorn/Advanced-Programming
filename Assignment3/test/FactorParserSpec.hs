@@ -43,3 +43,11 @@ spec = do
       (parse factorParser "" "\'foo\\\nbar\'") `shouldBe`-- 'foo\
                                                          --   bar'
       (Right $ String "foobar")
+
+    it "parses a variable like a keyword" $
+      (parse factorParser "" "truex") `shouldBe`
+      (Right $ Var "truex")
+
+    it "parses an expression in parentheses with whitespace" $
+      (parse factorParser "" "(     5   )   ") `shouldBe`
+      (Right $ Number 5)
