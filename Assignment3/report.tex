@@ -26,10 +26,7 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 	<Expr'> ::= `,' Expr
 	\alt $\varepsilon$
 
-	<Expr1> ::= Factor
-	\alt Term
-	\alt Comparable
-	\alt Assignable
+	<Expr1> ::= Assignable
 	\alt Assignment
 	\alt Ident `(' Exprs `)'
 	\alt `[' Exprs `]'
@@ -73,11 +70,11 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 	<Assignment'> ::= Expr1
 	\alt Assignment
 	
-	<Exprs> ::= $\varepsilon$
-	\alt Expr1 CommaExprs	
+	<Exprs> ::= Expr1 CommaExprs
+	\alt $\varepsilon$	
 	
-	<CommaExprs> ::= $\varepsilon$
-	\alt `,' Expr1 CommaExprs
+	<CommaExprs> ::= `,' Expr1 CommaExprs
+	\alt $\varepsilon$
 	
 	<ArrayFor> ::= `for' `(' Ident `of' Expr1 `)' ArrayCompr
 	
