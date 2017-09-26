@@ -40,6 +40,7 @@ test-suite test-Assignment3
                       , TermParserSpec
                       , ComparableParserSpec
                       , AssignableParserSpec
+                      , AssignmentSpec
   Type:                 exitcode-stdio-1.0
   Default-Language:     Haskell2010
   Hs-Source-Dirs:       test

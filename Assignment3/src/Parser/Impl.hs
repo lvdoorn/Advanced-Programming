@@ -20,6 +20,7 @@ module Parser.Impl (
   , parseTerm
   , parseComparable
   , parseAssignable
+  , parseAssignment
   ) where
 
 import SubsAst
@@ -162,15 +163,15 @@ factorParser = whitespace $
                          , try parseIdent
                          , stringParser
                          , parseTrue
-                         , parseFalse
+                         , try parseFalse
                          , parseUndefined
                          ]
 
 parseTimes :: Parser Char
-parseTimes = char '*'
+parseTimes = whitespace $ char '*'
 
 parseMod :: Parser Char
-parseMod = char '%'
+parseMod = whitespace $ char '%'
 
 parseProdOp :: Parser Char
 parseProdOp = parseTimes <|> parseMod
@@ -187,10 +188,10 @@ parseTerm' input = (do prodOp <- parseProdOp
                <|> return input
 
 parsePlus :: Parser Char
-parsePlus = char '+'
+parsePlus = whitespace $ char '+'
 
 parseMinus :: Parser Char
-parseMinus = char '-'
+parseMinus = whitespace $ char '-'
 
 parseAddOp :: Parser Char
 parseAddOp = parsePlus <|> parseMinus
@@ -207,13 +208,13 @@ parseComparable' input = (do addOp <- parseAddOp
                      <|> return input
 
 parseLessThan :: Parser String
-parseLessThan = string "<"
+parseLessThan = whitespace $ string "<"
 
 parseEquals :: Parser String
-parseEquals = string "==="
+parseEquals = whitespace $ string "==="
 
 parseCompOp :: Parser String
-parseCompOp = parseLessThan <|> parseEquals
+parseCompOp = parseLessThan <|> try parseEquals
 
 parseAssignable :: Parser Expr
 parseAssignable = do
@@ -227,18 +228,19 @@ parseAssignable' input = (do compOp <- parseCompOp
                      <|> return input
 
 parseAssign :: Parser Char
-parseAssign = char '='
+parseAssign = whitespace $ char '='
 
 parseAssignment :: Parser Expr
 parseAssignment = do
-  ident <- parseIdent
+  Var ident <- parseIdent
   _ <- parseAssign
   parseAssignment' ident
 
-
--- TODO, need expr1 parser first
-parseAssignment' :: Expr -> Parser Expr
-parseAssignment' input = undefined
+parseAssignment' :: Ident -> Parser Expr
+parseAssignment' input = (do assignment <- parseAssignment
+                             return $ Assign input assignment)
+                     <|> (do expr1 <- parseExpr1
+                             return $ Assign input expr1)
 
 parseComma :: Parser Char
 parseComma = whitespace $ char ','
@@ -255,11 +257,11 @@ parseExpr' input = (do _ <- parseComma
                <|> return input
 
 parseExpr1 :: Parser Expr
-parseExpr1 = choice [ parseAssignable
-                    , parseAssignment
-                    , parseFunctionCall
+parseExpr1 = choice [ try parseArrayArrayFor
                     , parseArray
-                    -- , parseArrayFor -- with Compr
+                    , try parseFunctionCall
+                    , try parseAssignment
+                    , parseAssignable
                     ]
 
 parseFunctionCall :: Parser Expr
@@ -275,43 +277,48 @@ parseArray = do _ <- whitespace $ char '['
                 _ <- whitespace $ char ']'
                 return $ Array exprs
 
--- parseArrayArrayFor :: Parser Expr
--- parseArrayArrayFor = 
+parseArrayArrayFor :: Parser Expr
+parseArrayArrayFor = do _ <- whitespace $ char '['
+                        compr <- parseArrayFor
+                        _ <- whitespace $ char ']'
+                        return $ Compr compr
 
 parseFor :: Parser String
-parseFor = string "for"
+parseFor = whitespace $ string "for"
 
 parseOf :: Parser String
-parseOf = string "of"
+parseOf = whitespace $ string "of"
 
--- parseArrayFor :: Parser ArrayCompr
--- parseArrayFor = do _ <- whitespace $ parseFor
---                    _ <- whitespace $ char '(' -- TODO replace with between combinator
---                    Var ident <- whitespace $ parseIdent
---                    _ <- whitespace $ parseOf
---                    expr1 <- whitespace $ parseExpr1
---                    _ <- whitespace $ char ')'
---                    compr <- parseArrayCompr
---                    return $ ACFor ident expr1 compr
+parseArrayFor :: Parser ArrayCompr
+parseArrayFor = do _ <- try $ whitespace $ parseFor
+                   _ <- whitespace $ char '(' -- TODO replace with between combinator
+                   Var ident <- whitespace $ parseIdent
+                   _ <- whitespace $ parseOf
+                   expr1 <- whitespace $ parseExpr1
+                   _ <- whitespace $ char ')'
+                   compr <- parseArrayCompr
+                   return $ ACFor ident expr1 compr
 
--- parseIf :: Parser String
--- parseIf = string "if"
+parseIf :: Parser String
+parseIf = whitespace $ string "if"
 
--- parseArrayIf :: Parser ArrayCompr
--- parseArrayIf = do _ <- whitespace $ parseIf
---                   _ <- whitespace $ char '('
---                   expr1 <- whitespace $ parseExpr1
---                   _ <- whitespace $ char ')'
---                   compr <- parseArrayCompr
---                   return $ ACIf expr1 compr
+parseArrayIf :: Parser ArrayCompr
+parseArrayIf = do _ <- whitespace $ parseIf
+                  _ <- whitespace $ char '('
+                  expr1 <- whitespace $ parseExpr1
+                  _ <- whitespace $ char ')'
+                  compr <- parseArrayCompr
+                  return $ ACIf expr1 compr
 
--- parseArrayCompr :: Parser Expr
--- parseArrayCompr = choice [ parseExpr1
---                          , parseArrayFor
---                          , parseArrayIf
---                          ]
+parseArrayCompr :: Parser ArrayCompr
+parseArrayCompr = choice [ parseACBody
+                         , parseArrayFor
+                         , parseArrayIf
+                         ]
 
-
+parseACBody :: Parser ArrayCompr
+parseACBody = do expr <- parseExpr1
+                 return $ ACBody expr
 
 
 -- TODO combine with array parsing

@@ -51,15 +51,15 @@ spec = do
       (Right $ Array [Number 1, Number 2, Number 3])
 
     it "parses a simple array comprehension" $
-      (parseString "for (x of 1) 2") `shouldBe`
+      (parseString "[for(x of 1)2]") `shouldBe`
       (Right $ (Compr (ACFor "x" (Number 1) (ACBody (Number 2)))))
 
     it "parses an array comprehension with if" $
-      (parseString "for (x of 1) if (true) 3") `shouldBe`
+      (parseString "[for (x of 1) if (true) 3]") `shouldBe`
       (Right $ Compr $ ACFor "x" (Number 1) (ACIf TrueConst (ACBody $ Number 3)))
 
     it "parses a nested array comprehension" $
-      (parseString "for (x of 1) for (y of 2) 3") `shouldBe`
+      (parseString "[for (x of 1) for (y of 2) 3]") `shouldBe`
       (Right $ Compr $ ACFor "x" (Number 1) (ACFor "y" (Number 2) (ACBody $ Number 3)))
 
     it "parses a simple comma expression" $
