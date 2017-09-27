@@ -8,12 +8,8 @@ module Parser.Utilities (
 ) where
 
 import Text.Parsec hiding (Empty)
-import Text.Parsec.Prim hiding (token, Empty)
-import Text.Parsec.Char
 import Text.Parsec.String
-import Text.Parsec.Combinator
 
-import Data.Char
 
 parseIf :: Parser String
 parseIf = whitespace $ string "if"
