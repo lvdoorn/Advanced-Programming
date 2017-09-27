@@ -103,9 +103,12 @@ Of course, we cannot say this with 100\% certainty, we can only base our assessm
 
 \section{Assessment of Implementation}
 
-\subsection{Objective Assessment}
+\subsection{Implementation Details}
 In order to implement the parser, we first defined the grammar, which can be seen as a pseudo-code for the solution. In order to express all the possible legitimate expressions we used recursion. So, the algorithm is relative straightforward, given an expression, we recursively assess the given input with the rules we set based on the final grammar. We think that this approach is suitable in that it avoids using complex data structures and keeps things simple.
 
+We have used the \texttt{try} combinator of the Parsec library in several cases. In these cases, it was necessary to use the try combinator because a parser that could fail might not fail on the first character. For example, when parsing the keyword \texttt{`for'}, when \texttt{`false'} is being parsed, the parser will fail, but after consuming the `f' character. This necessitates the use of the \texttt{try} combinator.
+
+\subsection{Objective Assessment}
 The overall quality of the code is high: 
 \begin{itemize}
 	\item code consists of small functions named accordingly;
@@ -116,7 +119,8 @@ The overall quality of the code is high:
  
 To assess the robustness of our implementation, we have written a test suite consisting of both unit and end-to-end tests.
 We have a pretty high test coverage of the solution, namely 98 tests to prove correctness of implementation. The output of \texttt{stack test --coverage} is as follows: \newline
-\texttt{95\% expressions used (500/522) \newline
+\texttt{
+	95\% expressions used (500/522) \newline
 	63\% boolean coverage (7/11)\newline
 	50\% guards (4/8), 2 always True, 1 always False, 1 unevaluated\newline
 	100\% 'if' conditions (3/3)\newline
@@ -124,7 +128,9 @@ We have a pretty high test coverage of the solution, namely 98 tests to prove co
 	81\% alternatives used (13/16)\newline
 	100\% local declarations used (3/3)\newline
 	98\% top-level declarations used (53/54)\newline
-	}The Parsers were tested for concrete cases, whereas properties were tested using random generators (quickcheck).
+	}
+	
+The Parsers were tested for concrete cases, whereas properties were tested using random generators (quickcheck). We have used quickcheck tests to generate random integers for numbers, and random strings for identifiers and strings. 
 
 \subsection{Value Judgement}
 Based on the coverage of our own test suite and the fact that our implementation passes all onlineTA tests, we can say that we are confident in the correct behaviour of our implementation. Although a test suite can never truly be exhaustive, we believe that we cover enough cases to argue that our implementation meets the requirements.
