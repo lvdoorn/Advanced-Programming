@@ -11,17 +11,10 @@ module Parser.ParseAssignment (
   , parseAssign
 ) where
 
-import SubsAst
-import Parser.ParseFactor
 import Parser.Utilities (whitespace)
 
 import Text.Parsec hiding (Empty)
-import Text.Parsec.Prim hiding (token, Empty)
-import Text.Parsec.Char
 import Text.Parsec.String
-import Text.Parsec.Combinator
-
-import Data.Char
 
 parseTimes :: Parser Char
 parseTimes = whitespace $ char '*'
