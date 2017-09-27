@@ -20,14 +20,9 @@ import SubsAst
 import Parser.Utilities (whitespace)
 
 import Text.Parsec hiding (Empty)
-import Text.Parsec.Prim hiding (token, Empty)
-import Text.Parsec.Char
 import Text.Parsec.String
-import Text.Parsec.Combinator
 
 import Data.Char
-
-import Debug.Trace
 
 -- Parses a positive number
 posNumber :: Parser Expr
@@ -60,8 +55,8 @@ getBackslashChar c | c == 'n' = Right '\n'
 -- Parses a newline character after a backslash used to run a string over multiple lines
 parseNewline :: Parser ()
 parseNewline = do
-  a <- char '\\'
-  b <- char '\n' -- can be replaced by newline (parser)
+  _ <- char '\\'
+  _ <- char '\n' -- can be replaced by newline (parser)
   return ()
 
 -- Parses the backslash characters from SubScript
@@ -70,8 +65,8 @@ backslash = do
   _ <- char '\\'
   c <- oneOf ['\'', 'n', 't', '\\', '\n']
   case getBackslashChar c of
-    Right char -> return char
-    --Left error -> fail error -- TODO(?)
+    Right res -> return res
+    _ -> fail "backslash error" -- TODO(?)
 
 -- Checks if a character is allowed in a SubScript string
 isValid :: Char -> Bool
@@ -100,19 +95,19 @@ stringParser = do
 -- Parses the `true' keyword
 parseTrue :: Parser Expr
 parseTrue = whitespace $ do
-  string "true"
+  _ <- string "true"
   return TrueConst
 
 -- Parses the `false' keyword
 parseFalse :: Parser Expr
 parseFalse = whitespace $ do
-  string "false"
+  _ <- string "false"
   return FalseConst
 
 -- Parses the `undefined' keyword
 parseUndefined :: Parser Expr
 parseUndefined = whitespace $ do
-  string "undefined"
+  _ <- string "undefined"
   return Undefined
 
 keywords :: [String]
