@@ -10,14 +10,9 @@ import Text.Parsec.String
 
 
 parseKeyword :: String -> Parser ()
-parseKeyword str = whitespace $ do string str
+parseKeyword str = whitespace $ do 
+                                   _ <- string str
                                    notFollowedBy alphaNum
-
-parseFor :: Parser String
-parseFor = whitespace $ string "for"
-
-parseOf :: Parser String
-parseOf = whitespace $ string "of"
 
 parseComma :: Parser Char
 parseComma = whitespace $ char ','
