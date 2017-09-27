@@ -102,7 +102,18 @@ We have chosen the solution of skipping whitespace after each token and at the v
 \section{Assessment of Implementation}
 
 \subsection{Objective Assessment}
-To assess the robustness of our implementation, we have written a test suite consisting of both unit tests and end-to-end tests. 
+In order to implement the parser, we first defined the grammar which can be seen as a pseudo-code for the solution. In order to express all the possible legit expressions we used recursion. So, the algorithm is relative straightforward, given an expression, we recursively asses the given input with the rules we set based on the final grammar. We think that this approach is suitable in that it avoids using complex data structures and keeps things simple.
+
+The overall quality of the code is high: 
+\begin{itemize}
+	\item code consists of small functions named accordingly;
+	\item we separated code in different files. This way we separated various concerns in submodules;
+	\item code is indented and readable;
+	\item we used hlint, ghc -W and OnlineTA to clean up the code.
+\end{itemize}
+ 
+To assess the robustness of our implementation, we have written a test suite consisting of both unit and end-to-end tests.
+We have a pretty high test coverage of the solution, namely 98 tests to prove correctness of implementation. Parsers were tasted for concrete cases, whereas properties were tested using random generators (quickcheck).
 
 \subsection{Value Judgement}
 
