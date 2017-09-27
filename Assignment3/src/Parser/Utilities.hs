@@ -8,7 +8,6 @@ module Parser.Utilities (
 import Text.Parsec hiding (Empty)
 import Text.Parsec.String
 
-
 parseKeyword :: String -> Parser ()
 parseKeyword str = whitespace $ do 
                                    _ <- string str
@@ -17,29 +16,30 @@ parseKeyword str = whitespace $ do
 parseComma :: Parser Char
 parseComma = whitespace $ char ','
 
--- skipComment :: Parser a -> Parser a
--- skipComment p = do res <- p
---                    string "//"
---                    manyTill anyChar (newline <|> eof)
---                    return res
+-- Skips a comment
+skipComment :: Parser ()
+skipComment = do string "//"
+                 _ <- manyTill anyChar (newLine <|> eof)
+                 return ()
+
+-- Wrapper for newline to be of type ()
+newLine :: Parser ()
+newLine = do
+  _ <- newline
+  return ()
 
 -- Copied from slide 14 of second parser lecture
 whitespace :: Parser a -> Parser a
 whitespace p = do res <- p
                   spaces
-                  optional $ (do string "//"
-                                 (manyTill anyChar eof) <|> (manyTill anyChar newline)
-
-                              )
-                  -- _ <- try $ optional (do string "//"
-                  --                         manyTill anyChar newline)
-                  -- _ <- try $ optional (do string "//"
-                  --                         manyTill anyChar eof)
+                  optional skipComment
+                  spaces
                   return res
-stripLeadingWhitespace :: Parser a -> Parser a
-stripLeadingWhitespace p = do spaces
-                              optional $ (do string "//"
-                                             (try (manyTill anyChar eof)) <|> (manyTill anyChar newline)
 
-                                          )
-                              p
+-- Strips whitespace leading a string
+stripLeadingWhitespace :: Parser a -> Parser a
+stripLeadingWhitespace p = do
+  spaces
+  optional skipComment
+  spaces
+  p

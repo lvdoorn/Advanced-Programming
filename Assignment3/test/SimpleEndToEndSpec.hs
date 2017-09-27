@@ -70,6 +70,7 @@ spec = do
     it "fails to parse a string with an unescaped quote" $
       isLeft (parseString "\'\'\'")
 
+  describe "skipComment" $ do
     it "parses a comment at the start" $
       parseString "// Comment \n 3" `shouldBe`
       (Right $ Number 3)
@@ -77,3 +78,7 @@ spec = do
     it "parses a comment as a separator" $
       parseString "[ for //\n(x//\nof//\ny)//\nz]" `shouldBe`
       parseString "[ for (x of y) z]"
+
+    it "skips a simple comment" $
+      parseString "3//comment" `shouldBe`
+      (Right $ Number 3)
