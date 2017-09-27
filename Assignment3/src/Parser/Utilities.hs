@@ -1,7 +1,5 @@
 module Parser.Utilities (
-    parseIf
-  , parseFor
-  , parseOf
+    parseKeyword
   , parseComma
   , whitespace
   , stripLeadingWhitespace
@@ -11,8 +9,9 @@ import Text.Parsec hiding (Empty)
 import Text.Parsec.String
 
 
-parseIf :: Parser String
-parseIf = whitespace $ string "if"
+parseKeyword :: String -> Parser ()
+parseKeyword str = whitespace $ do string str
+                                   notFollowedBy alphaNum
 
 parseFor :: Parser String
 parseFor = whitespace $ string "for"

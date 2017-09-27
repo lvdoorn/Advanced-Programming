@@ -161,10 +161,10 @@ parseArrayArrayFor = do _ <- whitespace $ char '['
 
 -- Parses an ArrayFor
 parseArrayFor :: Parser ArrayCompr
-parseArrayFor = do _ <- try $ whitespace parseFor
+parseArrayFor = do _ <- try $ whitespace $ parseKeyword "for"
                    _ <- whitespace $ char '(' -- TODO replace with between combinator
                    Var ident <- whitespace parseIdent
-                   _ <- whitespace parseOf
+                   _ <- whitespace $ parseKeyword "of"
                    expr1 <- whitespace parseExpr1
                    _ <- whitespace $ char ')'
                    compr <- parseArrayCompr
@@ -172,7 +172,7 @@ parseArrayFor = do _ <- try $ whitespace parseFor
 
 -- Parses an ArrayIf
 parseArrayIf :: Parser ArrayCompr
-parseArrayIf = do _ <- whitespace parseIf
+parseArrayIf = do _ <- whitespace $ parseKeyword "if"
                   _ <- whitespace $ char '('
                   expr1 <- whitespace parseExpr1
                   _ <- whitespace $ char ')'
