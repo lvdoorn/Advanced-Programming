@@ -35,5 +35,4 @@ whitespace p = do res <- p
 
 stripLeadingWhitespace :: Parser a -> Parser a
 stripLeadingWhitespace p = do spaces
-                              res <- p
-                              return res;
+                              p

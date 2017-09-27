@@ -40,15 +40,12 @@ import Data.Char
 import Debug.Trace -- TODO: delete before handing in
 
 parseString :: String -> Either ParseError Expr
-parseString str = parse (stripLeadingWhitespace parseExpr) "fail" str
+parseString = parse (stripLeadingWhitespace parseExpr) "fail"
 
-
-
-
-
+-- Parses an expression between parentheses
 parentheses :: Parser Expr
 parentheses = do _ <- whitespace $ char '('
-                 expr <- whitespace $ parseExpr
+                 expr <- whitespace parseExpr
                  _ <- whitespace $ char ')'
                  return expr
 
@@ -65,64 +62,73 @@ parseFactor = whitespace $
                          , parseUndefined
                          ]
 
+-- Parses a Term in the grammar
 parseTerm :: Parser Expr
 parseTerm = do
   factor <- parseFactor
   parseTerm' factor
 
+-- Parses a Term' in the grammar
 parseTerm' :: Expr -> Parser Expr
 parseTerm' input = (do prodOp <- parseProdOp
                        factor <- parseFactor
                        parseTerm' $ Call [prodOp] [input, factor])
                <|> return input
 
+-- Parses a Comparable in the grammar
 parseComparable :: Parser Expr
 parseComparable = do
   term <- parseTerm
   parseComparable' term
 
+-- Parses a Comparable' in the grammar
 parseComparable' :: Expr -> Parser Expr
 parseComparable' input = (do addOp <- parseAddOp
                              term <- parseTerm
                              parseComparable' $ Call [addOp] [input, term])
                      <|> return input
 
+-- Parses an Assignable in the grammar
 parseAssignable :: Parser Expr
 parseAssignable = do
   comparable <- parseComparable
   parseAssignable' comparable
 
+-- Parses an Assignable' in the grammar
 parseAssignable' :: Expr -> Parser Expr
 parseAssignable' input = (do compOp <- parseCompOp
                              comparable <- parseComparable
                              parseAssignable' $ Call compOp [input, comparable])
                      <|> return input
 
+-- Parses an Assignment in the grammar
 parseAssignment :: Parser Expr
 parseAssignment = do
   Var ident <- parseIdent
   _ <- parseAssign
   parseAssignment' ident
 
+-- Parses an Assignment' in the grammar
 parseAssignment' :: Ident -> Parser Expr
 parseAssignment' input = (do assignment <- parseAssignment
                              return $ Assign input assignment)
                      <|> (do expr1 <- parseExpr1
                              return $ Assign input expr1)
 
-
-
+-- Parses an Expr in the grammar
 parseExpr :: Parser Expr
 parseExpr = do
-  expr1 <- whitespace $ parseExpr1
+  expr1 <- whitespace parseExpr1
   parseExpr' expr1
 
+-- Parses an Expr' in the grammar
 parseExpr' :: Expr -> Parser Expr
 parseExpr' input = (do _ <- parseComma
-                       rest <- whitespace $ parseExpr
+                       rest <- whitespace parseExpr
                        return $ Comma input rest)
                <|> return input
 
+-- Parses an Expr1 in the grammar
 parseExpr1 :: Parser Expr
 parseExpr1 = choice [ try parseArrayArrayFor
                     , parseArray
@@ -131,6 +137,7 @@ parseExpr1 = choice [ try parseArrayArrayFor
                     , parseAssignable
                     ]
 
+-- Parses a function call (Ident (...) in the grammar)
 parseFunctionCall :: Parser Expr
 parseFunctionCall = do Var ident <- parseIdent
                        _ <- char '('
@@ -138,74 +145,63 @@ parseFunctionCall = do Var ident <- parseIdent
                        _ <- char ')'
                        return $ Call ident args
 
+-- Parses an array
 parseArray :: Parser Expr
 parseArray = do _ <- whitespace $ char '['
-                exprs <- whitespace $ parseExprs
+                exprs <- whitespace parseExprs
                 _ <- whitespace $ char ']'
                 return $ Array exprs
 
+-- Parses an ArrayFor within an array
 parseArrayArrayFor :: Parser Expr
 parseArrayArrayFor = do _ <- whitespace $ char '['
                         compr <- parseArrayFor
                         _ <- whitespace $ char ']'
                         return $ Compr compr
 
-
-
+-- Parses an ArrayFor
 parseArrayFor :: Parser ArrayCompr
-parseArrayFor = do _ <- try $ whitespace $ parseFor
+parseArrayFor = do _ <- try $ whitespace parseFor
                    _ <- whitespace $ char '(' -- TODO replace with between combinator
-                   Var ident <- whitespace $ parseIdent
-                   _ <- whitespace $ parseOf
-                   expr1 <- whitespace $ parseExpr1
+                   Var ident <- whitespace parseIdent
+                   _ <- whitespace parseOf
+                   expr1 <- whitespace parseExpr1
                    _ <- whitespace $ char ')'
                    compr <- parseArrayCompr
                    return $ ACFor ident expr1 compr
 
-
-
+-- Parses an ArrayIf
 parseArrayIf :: Parser ArrayCompr
-parseArrayIf = do _ <- whitespace $ parseIf
+parseArrayIf = do _ <- whitespace parseIf
                   _ <- whitespace $ char '('
-                  expr1 <- whitespace $ parseExpr1
+                  expr1 <- whitespace parseExpr1
                   _ <- whitespace $ char ')'
                   compr <- parseArrayCompr
                   return $ ACIf expr1 compr
 
+-- Parses any ArrayCompr
 parseArrayCompr :: Parser ArrayCompr
 parseArrayCompr = choice [ parseACBody
                          , parseArrayFor
                          , parseArrayIf
                          ]
 
+-- Parses an ACBody
 parseACBody :: Parser ArrayCompr
 parseACBody = do expr <- parseExpr1
                  return $ ACBody expr
 
 
 -- TODO combine with array parsing
+-- Parses a list of expressions
 parseExprs :: Parser [Expr]
-parseExprs = do expr1 <- whitespace $ parseExpr1
+parseExprs = do expr1 <- whitespace parseExpr1
                 parseCommaExprs expr1
          <|> return []
 
+-- Parses expressions separated by a comma
 parseCommaExprs :: Expr -> Parser [Expr]
 parseCommaExprs input = do _ <- parseComma
-                           tail <- whitespace $ parseExprs
+                           tail <- whitespace parseExprs
                            return (input:tail)
                     <|> return [input]
-
-
-
-
-
--- parseExpr :: Parser Expr
--- parseExpr = do
---   expr1 <- whitespace $ parseExpr1
---   parseExpr' expr1
-
--- parseExpr' :: Expr -> Parser Expr
--- parseExpr' input = (do _ <- parseComma
---                        rest <- whitespace $ parseExpr
---                        return $ Comma input rest)
---                <|> return input
