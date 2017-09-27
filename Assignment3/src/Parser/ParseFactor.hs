@@ -27,18 +27,20 @@ import Text.Parsec.Combinator
 
 import Data.Char
 
+import Debug.Trace
+
 -- Parses a positive number
 posNumber :: Parser Expr
 posNumber = do
   n <- many1 digit
-  if length (show n) <= 8 then return $ Number $ read n else fail "Int too long"
+  if length (show n) <= 10 then return $ Number $ read n else fail "Int too long"
 
 -- Parses a negative number
 negNumber :: Parser Expr
 negNumber = do
   _ <- char '-'
   n <- many1 digit
-  return $ Number (read n * (-1))
+  if length (show n) <= 10 then return $ Number (read n * (-1)) else fail "Int too long"
 
 -- TODO: Eight digit limit on numbers
 -- Parses any number
