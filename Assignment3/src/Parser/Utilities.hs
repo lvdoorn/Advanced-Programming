@@ -28,18 +28,19 @@ newLine = do
   _ <- newline
   return ()
 
--- Copied (with adaptations) from slide 14 of second parser lecture
+-- Core imlementation of whitespace and comment skipping
+whitespaceCore :: Parser ()
+whitespaceCore = do spaces
+                    optional skipComment
+                    spaces
+
+-- Removes whitespace after a string
 whitespace :: Parser a -> Parser a
 whitespace p = do res <- p
-                  spaces
-                  optional skipComment
-                  spaces
+                  whitespaceCore
                   return res
 
 -- Strips whitespace leading a string
 stripLeadingWhitespace :: Parser a -> Parser a
-stripLeadingWhitespace p = do
-  spaces
-  optional skipComment
-  spaces
-  p
+stripLeadingWhitespace p = do whitespaceCore
+                              p
