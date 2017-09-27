@@ -1,7 +1,6 @@
 module StringParserSpec (spec) where
 
 import Test.Hspec
-import Test.QuickCheck.Modifiers hiding (PrintableString)
 import Test.Hspec.QuickCheck
 import Test.QuickCheck hiding (PrintableString)
 import Parser.Impl

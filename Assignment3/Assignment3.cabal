@@ -36,6 +36,7 @@ test-suite test-Assignment3
   other-modules:	SimpleInputsSpec
                       , NumberParserSpec
                       , SimpleEndToEndSpec
+                      , ComplexEndToEndSpec
                       , StringParserSpec
                       , FactorParserSpec
                       , OperatorFreeSpec
