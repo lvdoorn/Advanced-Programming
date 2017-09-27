@@ -7,6 +7,7 @@ import Test.QuickCheck
 import Parser.Impl
 
 import Data.Char
+import Data.Either (isLeft)
 
 import SubsAst
 import Control.Monad
@@ -37,3 +38,24 @@ spec = do
     it "parses a string with a pseudocomment" $
       (parseString "'This is a string // this is not a comment'") `shouldBe`
       (Right $ String "This is a string // this is not a comment")
+
+    it "fails to parse a positive double" $
+      isLeft (parseString "1.5")
+
+    it "fails to parse a negative double" $
+      isLeft (parseString "-1.5")
+
+    it "fails to parse a big positive number" $
+      isLeft (parseString "111111111")
+
+    it "fails to parse a big negative number" $
+      isLeft (parseString "-222222222")
+
+    it "fails to parse a single minus" $
+      isLeft (parseString "-")
+
+    it "fails to parse a double negative" $
+      isLeft (parseString "--2")
+
+    it "fails to parse an assignment to a positive double" $
+      isLeft (parseString "x = 1.5")

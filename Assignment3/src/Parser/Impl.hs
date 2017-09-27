@@ -1,6 +1,7 @@
 module Parser.Impl (
-    parseString
-  , ParseError
+    ParseError
+  , parseString
+  -- , ParseError
   , posNumber
   , negNumber
   , number
@@ -40,7 +41,9 @@ import Data.Char
 import Debug.Trace -- TODO: delete before handing in
 
 parseString :: String -> Either ParseError Expr
-parseString = parse (stripLeadingWhitespace parseExpr) "fail"
+parseString str = parse (do res <- stripLeadingWhitespace parseExpr
+                            eof
+                            return res) "fail" str
 
 -- Parses an expression between parentheses
 parentheses :: Parser Expr
@@ -108,12 +111,35 @@ parseAssignment = do
   _ <- parseAssign
   parseAssignment' ident
 
--- Parses an Assignment' in the grammar
+  -- Parses an Assignment' in the grammar
 parseAssignment' :: Ident -> Parser Expr
-parseAssignment' input = (do assignment <- parseAssignment
-                             return $ Assign input assignment)
-                     <|> (do expr1 <- parseExpr1
+parseAssignment' input = (do expr1 <- parseExpr1
                              return $ Assign input expr1)
+
+
+
+                     --     (do assignment <- parseAssignmentNested
+                     --         return $ Assign input assignment)
+                     -- <|> (do expr1 <- parseExpr1
+                     --         return $ Assign input expr1)
+
+parseAssignmentNested :: Parser Expr
+parseAssignmentNested = do
+  Var ident <- parseIdent
+  _ <- parseAssign
+  parseAssignment'Nested ident
+
+
+
+parseAssignment'Nested :: Ident -> Parser Expr
+parseAssignment'Nested input = (do assignment <- parseAssignmentNested
+                                   return $ Assign input assignment)
+                           <|> (do expr1 <- parseExpr1
+                                   return $ Assign input expr1)
+                           <|> (return $ Var input)
+
+
+
 
 -- Parses an Expr in the grammar
 parseExpr :: Parser Expr

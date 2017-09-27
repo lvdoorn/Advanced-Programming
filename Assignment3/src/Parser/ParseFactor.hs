@@ -45,8 +45,9 @@ negNumber = do
 -- TODO: Eight digit limit on numbers
 -- Parses any number
 number :: Parser Expr
-number = whitespace $ negNumber <|> posNumber
-
+number = do res <- whitespace $ negNumber <|> posNumber
+            notFollowedBy $ char '.'
+            return res
 -- TODO: newlines
 
 -- Returns the correct char matching a backslash sequence

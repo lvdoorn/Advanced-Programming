@@ -35,3 +35,7 @@ spec = do
     it "parses \'<\' in an assignment with correct associativity" $
       (parse parseAssignment "" "x = 5 < 6 < 7") `shouldBe`
       Right (Assign "x" (Call "<" [Call "<" [Number 5,Number 6],Number 7]))
+
+    it "parses an assignment to a variable" $
+      (parse parseAssignment "" "x = y") `shouldBe`
+      Right (Assign "x" (Var "y"))

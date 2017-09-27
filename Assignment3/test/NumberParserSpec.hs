@@ -53,3 +53,21 @@ spec = do
     it "parses a number followed by whitespace" $
       (parse number "fail" "3      ") `shouldBe`
       (Right $ Number 3)
+
+    it "fails to parse a positive double" $
+      isLeft (parse number "fail" "1.5")
+
+    it "fails to parse a negative double" $
+      isLeft (parse number "fail" "-1.5")
+
+    it "fails to parse a big positive number" $
+      isLeft (parse number "fail" "111111111")
+
+    it "fails to parse a big negative number" $
+      isLeft (parse number "fail" "-222222222")
+
+    it "fails to parse a single minus" $
+      isLeft (parse number "fail" "-")
+
+    it "fails to parse a double negative" $
+      isLeft (parse number "fail" "--2")
