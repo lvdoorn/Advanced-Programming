@@ -18,7 +18,8 @@ parseComma = whitespace $ char ','
 
 -- Skips a comment
 skipComment :: Parser ()
-skipComment = do string "//"
+skipComment = do 
+                 _ <- string "//"
                  _ <- manyTill anyChar (newLine <|> eof)
                  return ()
 

@@ -32,8 +32,6 @@ import Parser.ParseAssignment
 import Text.Parsec hiding (Empty)
 import Text.Parsec.String
 
-import Debug.Trace -- TODO: delete before handing in
-
 parseString :: String -> Either ParseError Expr
 parseString = parse (do
                         res <- stripLeadingWhitespace parseExpr
@@ -115,26 +113,6 @@ parseAssignment' :: Ident -> Parser Expr
 parseAssignment' input = do
                             expr1 <- parseExpr1
                             return $ Assign input expr1
-
-                     --     (doassignment <- parseAssignmentNested
-                     --         return $ Assign input assignment)
-                     -- <|> (doexpr1 <- parseExpr1
-                     --         return $ Assign input expr1)
-
-parseAssignmentNested :: Parser Expr
-parseAssignmentNested = do
-                           Var ident <- parseIdent
-                           _ <- parseAssign
-                           parseAssignment'Nested ident
-
-parseAssignment'Nested :: Ident -> Parser Expr
-parseAssignment'Nested input = (do
-                                   assignment <- parseAssignmentNested
-                                   return $ Assign input assignment)
-                           <|> (do
-                                   expr1 <- parseExpr1
-                                   return $ Assign input expr1)
-                           <|>  return (Var input)
 
 -- Parses an Expr in the grammar
 parseExpr :: Parser Expr
