@@ -51,3 +51,4 @@ spec = do
     it "parses an expression in parentheses with whitespace" $
       (parse parseFactor "" "(     5   )   ") `shouldBe`
       (Right $ Number 5)
+      

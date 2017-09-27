@@ -59,3 +59,21 @@ spec = do
 
     it "fails to parse an assignment to a positive double" $
       isLeft (parseString "x = 1.5")
+
+    it "fails to parse an invalid number" $
+      isLeft (parseString "12asd")
+
+    it "parses escape sequences correctly" $
+      parseString "\'\\\'\\n\\t\\\\\'" `shouldBe`
+      (Right $ String "\'\n\t\\")
+
+    it "fails to parse a string with an unescaped quote" $
+      isLeft (parseString "\'\'\'")
+
+    it "parses a comment at the start" $
+      parseString "// Comment \n 3" `shouldBe`
+      (Right $ Number 3)
+
+    it "parses a comment as a separator" $
+      parseString "[ for //\n(x//\nof//\ny)//\nz]" `shouldBe`
+      parseString "[ for (x of y) z]"
