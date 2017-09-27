@@ -1,9 +1,9 @@
 module StringParserSpec (spec) where
 
 import Test.Hspec
-import Test.QuickCheck.Modifiers
+import Test.QuickCheck.Modifiers hiding (PrintableString)
 import Test.Hspec.QuickCheck
-import Test.QuickCheck
+import Test.QuickCheck hiding (PrintableString)
 import Parser.Impl
 
 import Data.Char
@@ -20,6 +20,18 @@ newtype NormalChar = NormalChar Char deriving (Show, Eq)
 instance Arbitrary NormalChar where
   arbitrary = oneof $ return `map` (NormalChar `map` ['n',  't'])
 
+newtype PrintableChar = PrintableChar {getPChar :: Char} deriving (Show, Eq)
+instance Arbitrary PrintableChar where
+  arbitrary = do
+    randint <- choose (32, 126) `suchThat` (\x -> if x == 39 || x == 92 then False else True)
+    return $ PrintableChar $ chr $ randint
+
+newtype PrintableString = PrintableString {getPString :: String} deriving (Show,Eq)
+instance Arbitrary PrintableString where
+  arbitrary = do
+    list <- listOf arbitrary
+    return $ PrintableString $ getPChar `map` list
+
 -- String tests --
 prop_backslash_backslash_char :: BackslashChar -> Bool
 prop_backslash_backslash_char (BackslashChar c) = ((parse backslash "fail" ('\\':[c])) == Right c)
@@ -31,11 +43,9 @@ prop_backslash_normal_char (NormalChar c) = ((parse backslash "fail" ('\\':[c]))
                                               _ -> fail "Backslash followed by invalid letter")
 
 -- TODO: Add generator for proper strings
-prop_normal_strings :: ASCIIString -> Property
-prop_normal_strings s = let str = getASCIIString s in
-    all (\x -> ord x >= 32 && ord x <= 126 && x /= '\\' && x /= '\'') str
-      ==> (parse stringParser "fail" ("\'" ++ (getASCIIString s) ++ "\'")) ==
-          (Right $ String $ getASCIIString s)
+prop_normal_strings :: PrintableString -> Bool
+prop_normal_strings s = let str = getPString s in
+    (parse stringParser "fail" ("\'" ++ (str) ++ "\'")) == (Right $ String $ str)
 
 spec :: Spec
 spec = do
