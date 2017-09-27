@@ -46,10 +46,6 @@ spec = do
   describe "number" $ do
     prop "parses negative and positive numbers" $ prop_any_number
 
-    -- Suggestion: Moves to end to end test
-    it "fails to parse an invalid number" $
-      isLeft (parse number "fail" "12asd")
-
     it "parses a number followed by whitespace" $
       (parse number "fail" "3      ") `shouldBe`
       (Right $ Number 3)

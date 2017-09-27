@@ -41,9 +41,9 @@ import Data.Char
 import Debug.Trace -- TODO: delete before handing in
 
 parseString :: String -> Either ParseError Expr
-parseString str = parse (do res <- stripLeadingWhitespace parseExpr
-                            eof
-                            return res) "fail" str
+parseString str = parse (whitespace $ (do res <- stripLeadingWhitespace parseExpr
+                                          eof
+                                          return res)) "fail" str
 
 -- Parses an expression between parentheses
 parentheses :: Parser Expr

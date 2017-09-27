@@ -75,22 +75,24 @@ backslash = do
 
 -- Checks if a character is allowed in a SubScript string
 isValid :: Char -> Bool
-isValid c | c == '\'' = False
-          | c == '\\' = False
+isValid c | c == '\''                   = False
+          | c == '\\'                   = False
           | ord c >= 32 && ord c <= 126 = True
-          | otherwise = False
+          | otherwise                   = False
 
 
 -- Parses a single character in a string constant
 parseChar :: Parser Char
 parseChar = do 
-  _ <- optional parseNewline
-  backslash <|> satisfy isValid
+  res <- backslash <|> satisfy isValid
+  _ <- option "x" (try $ string "\\\n")
+  return res
 
 -- Parses a string constant
 stringParser :: Parser Expr
-stringParser = whitespace $ do
+stringParser = do
   _ <- char '\''
+  _ <- option "x" (try $ string "\\\n") -- For strings starting with \\\n
   str <- many parseChar
   _ <- char '\''
   return $ String str
