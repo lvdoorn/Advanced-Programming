@@ -14,7 +14,6 @@ newtype BackslashChar = BackslashChar Char deriving (Show, Eq)
 instance Arbitrary BackslashChar where
   arbitrary = oneof $ return `map` (BackslashChar `map` ['\'', '\\'])
 
-
 newtype NormalChar = NormalChar Char deriving (Show, Eq)
 instance Arbitrary NormalChar where
   arbitrary = oneof $ return `map` (NormalChar `map` ['n',  't'])
@@ -41,7 +40,6 @@ prop_backslash_normal_char (NormalChar c) = ((parse backslash "fail" ('\\':[c]))
                                               't' -> Right '\t'
                                               _ -> fail "Backslash followed by invalid letter")
 
--- TODO: Add generator for proper strings
 prop_normal_strings :: PrintableString -> Bool
 prop_normal_strings s = let str = getPString s in
     (parse stringParser "fail" ("\'" ++ (str) ++ "\'")) == (Right $ String $ str)

@@ -33,6 +33,7 @@ prop_ident_keyword (KeywordGen x) = isLeft (parse parseIdent "" x)
 
 prop_ident_invalid :: IdentGen -> Property
 prop_ident_invalid (IdentGen x) = (x /= "" && (not $ isLetter (head x))) ==> (isLeft (parse parseIdent "" x))
+
 spec :: Spec
 spec = do
   describe "Single number" $ do

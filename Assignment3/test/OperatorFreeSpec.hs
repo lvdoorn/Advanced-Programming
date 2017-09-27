@@ -1,23 +1,8 @@
 module OperatorFreeSpec (spec) where
 
 import Test.Hspec
-import Test.QuickCheck.Modifiers
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
 import Parser.Impl
-
-import Data.Char
-
 import SubsAst
-import Control.Monad
-
-
--- TODO: Randomly generate test expressions
--- newtype TestExpr = TestExpr String deriving (Show, Eq)
--- instance Arbitrary TestExpr where
---   arbitrary = elements [TestExpr $ show (arbitrary Int)]
-
-
 
 spec :: Spec
 spec = do

@@ -1,16 +1,8 @@
 module FactorParserSpec (spec) where
 
 import Test.Hspec
-import Test.QuickCheck.Modifiers
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
 import Parser.Impl
-
-import Data.Char
-
 import SubsAst
-import Control.Monad
-
 
 spec :: Spec
 spec = do
@@ -51,4 +43,3 @@ spec = do
     it "parses an expression in parentheses with whitespace" $
       (parse parseFactor "" "(     5   )   ") `shouldBe`
       (Right $ Number 5)
-      

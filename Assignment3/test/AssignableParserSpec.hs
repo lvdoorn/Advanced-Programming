@@ -1,15 +1,8 @@
 module AssignableParserSpec (spec) where
 
 import Test.Hspec
-import Test.QuickCheck.Modifiers
-import Test.Hspec.QuickCheck
-import Test.QuickCheck
 import Parser.Impl
-
-import Data.Char
-
 import SubsAst
-import Control.Monad
 
 spec :: Spec
 spec = do
@@ -33,7 +26,6 @@ spec = do
     it "parses false===(5<4), assignable with parentheses" $
       (parse parseAssignable "" "false===(5<4)") `shouldBe`
       Right (Call "===" [FalseConst,Call "<" [Number 5,Number 4]])
-
 
     it "parses \'<\' with correct associativity" $
       (parse parseAssignable "" "5 < 6 < 7") `shouldBe`
