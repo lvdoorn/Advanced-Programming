@@ -45,7 +45,6 @@ parentheses = do
                  _ <- whitespace $ char ')'
                  return expr
 
--- TODO: Uniform naming conventions for parsers
 -- Parses a factor as specified in the grammar
 parseFactor :: Parser Expr
 parseFactor = whitespace $
@@ -197,7 +196,6 @@ parseACBody = do
                  return $ ACBody expr
 
 
--- TODO combine with array parsing
 -- Parses a list of expressions
 parseExprs :: Parser [Expr]
 parseExprs = do

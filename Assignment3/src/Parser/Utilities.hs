@@ -3,7 +3,7 @@ module Parser.Utilities (
   , parseComma
   , whitespace
   , stripLeadingWhitespace
-) where
+  ) where
 
 import Text.Parsec hiding (Empty)
 import Text.Parsec.String
@@ -16,7 +16,6 @@ parseKeyword str = whitespace $ do
 parseComma :: Parser Char
 parseComma = whitespace $ char ','
 
--- Skips a comment
 skipComment :: Parser ()
 skipComment = do 
                  _ <- string "//"
@@ -29,7 +28,7 @@ newLine = do
   _ <- newline
   return ()
 
--- Copied from slide 14 of second parser lecture
+-- Copied (with adaptations) from slide 14 of second parser lecture
 whitespace :: Parser a -> Parser a
 whitespace p = do res <- p
                   spaces

@@ -13,8 +13,7 @@ module Parser.ParseFactor (
   , parseUndefined
   , keywords
   , parseIdent
-
-) where
+  ) where
 
 import SubsAst
 import Parser.Utilities (whitespace)
@@ -37,13 +36,11 @@ negNumber = do
   n <- many1 digit
   if length (show n) <= 10 then return $ Number (read n * (-1)) else fail "Int too long"
 
--- TODO: Eight digit limit on numbers
 -- Parses any number
 number :: Parser Expr
 number = do res <- whitespace $ negNumber <|> posNumber
             notFollowedBy $ char '.'
             return res
--- TODO: newlines
 
 -- Returns the correct char matching a backslash sequence
 getBackslashChar :: Char -> Either ParseError Char
