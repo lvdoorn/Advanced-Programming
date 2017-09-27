@@ -93,14 +93,16 @@ We have chosen to use the parser combinator library \texttt{parsec}. This choice
 
 
 \section{Handling of Whitespace}
-We have chosen the solution of skipping whitespace after each token and at the very beginning, as was recommended in the lecture.
+We have chosen the solution of skipping whitespace after each token and at the very beginning, as was recommended in the lecture. To implement this, we have made a function \texttt{whitespace} which will take a parser as input, run the parser, and then skip any remaining whitespace. In the top level function we skip whitespace at the very beginning of the input.
 
 \section{Capabilities of Implementation}
 
 
-\section{Assessment of Implementation}
-\subsection{Objective Assessment}
 
+\section{Assessment of Implementation}
+
+\subsection{Objective Assessment}
+To assess the robustness of our implementation, we have written a test suite consisting of both unit tests and end-to-end tests. 
 
 \subsection{Value Judgement}
 
