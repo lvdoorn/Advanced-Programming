@@ -27,13 +27,13 @@ instance Arbitrary Expr where
 
 spec :: Spec
 spec = do
-  describe "Simple ACBody" $ do
-    it "evaluates a simple ACBody" $ do
-      (runExpr (Compr (ACBody (Number 1)))) `shouldBe` (Right (IntVal 1))
+  -- describe "Simple ACBody" $ do
+  --   it "evaluates a simple ACBody" $ do
+  --     (runExpr (Compr (ACBody (Number 1)))) `shouldBe` (Right (IntVal 1))
 
-  describe "Simple ACIf true" $ do
-    it "evaluates an AC with if" $ do
-      (runExpr (Compr (ACIf TrueConst (ACBody (Number 1))))) `shouldBe` (Right (IntVal 1))
+  -- describe "Simple ACIf true" $ do
+  --   it "evaluates an AC with if" $ do
+  --     (runExpr (Compr (ACIf TrueConst (ACBody (Number 1))))) `shouldBe` (Right (IntVal 1))
 
   describe "Only evens" $ do
     it "generates even number 0-8" $ do
@@ -54,7 +54,7 @@ spec = do
           (Comma
           (Assign
             "xs" (Array [Number 0, Number 1, Number 2, Number 3, Number 4, Number 5, Number 6, Number 7, Number 8, Number 9]))
-          (Assign
+          (Assign 
             "squares"
             (Compr
               (ACFor "x" (Var "xs") (ACBody (Call "*" [Var "x",Var "x"])))))))
@@ -80,3 +80,12 @@ spec = do
                                      (ACFor "y" (Var "xs") (ACBody (Number 0))))))
       `shouldBe`
       (Right (ArrayVal [IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0]))
+
+  describe "Scope test 2" $ do
+    it "evaluates a scope example" $
+      (runExpr $ Comma (Assign "x" (Number 0))
+                       (Comma (Compr (ACFor "y"
+                                     (Array [Number 1,Number 2,Number 3])
+                                     (ACBody (Assign "x" (Var "y")))))
+                       (Var "x")))
+      `shouldBe` Right (IntVal 3)

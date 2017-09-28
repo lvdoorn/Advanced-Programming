@@ -3,6 +3,7 @@ module EnvSpec (spec) where
 import Test.Hspec
 
 import SubsInterpreter
+import SubsAst
 
 import qualified Data.Map as Map
 
@@ -35,7 +36,7 @@ spec = do
 
   describe "GetVar empty env" $ do
      it "gets var from the env" $ do
-      (runSubsM (getVar "x")) initContext `shouldBe` (Left "Var not found")
+      (runExpr (Var "x")) `shouldBe` (Left "Var not found")
 
   describe "ModifyEnv with new env" $ do
      it "replaces existing env with a given env" $ do

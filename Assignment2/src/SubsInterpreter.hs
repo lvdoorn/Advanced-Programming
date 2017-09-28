@@ -20,6 +20,8 @@ import SubsAst
 import Control.Monad
 import qualified Data.Map as Map
 import Data.Map(Map)
+import Data.Either (isLeft)
+import Debug.Trace
 
 -- | A value is either an integer, the special constant undefined,
 --   true, false, a string, or an array of values.
@@ -29,6 +31,7 @@ data Value = IntVal Int
            | TrueVal | FalseVal
            | StringVal String
            | ArrayVal [Value]
+           | DummyVal
            deriving (Eq, Show)
 
 
@@ -109,12 +112,18 @@ mkArray _ = Left "Array() called with wrong number or type of arguments"
 modifyEnv :: (Env -> Env) -> SubsM ()
 modifyEnv f = SubsM (\(e,_) -> Right ((), f e))
 
+getEnv :: SubsM Env
+getEnv = SubsM $ \(env,_) -> (Right (env,env))
+
+exists :: Ident -> Env -> SubsM Bool
+exists ident env = return $ Map.member ident env
+
 putVar :: Ident -> Value -> SubsM ()
 putVar name val = SubsM (\(e,_) -> Right ((), Map.insert name val e))
 
 getVar :: Ident -> SubsM Value
 getVar name = SubsM (\(e,_) -> case Map.lookup name e of
-                        Nothing -> Left "Var not found"
+                        Nothing -> Right (DummyVal, e)
                         Just i ->  Right (i, e)
                     )
 
@@ -139,41 +148,44 @@ evalExpr (Assign ident expr) = do exprVal <- evalExpr expr
                                   _ <- putVar ident exprVal
                                   return exprVal
 evalExpr (Comma expr1 expr2) = evalExpr expr1 >> evalExpr expr2
-evalExpr (Compr compr) = evalCompr compr
+evalExpr (Compr compr) = do res <- evalCompr compr
+                            return $ ArrayVal res
 
-evalCompr :: ArrayCompr -> SubsM Value
-evalCompr (ACBody expr) = evalExpr expr
-evalCompr (ACFor identifier expr compr) = do arr <- evalExpr expr
-                                             func identifier arr compr
+-- x = 0, [for (y in [1,2,3]) x = y], x shouldBe 0
+-- [for (x in [1,2,3]) x], x should fail
 
--- Assume if only occurs after at least one for
+evalCompr :: ArrayCompr -> SubsM [Value]
+evalCompr (ACBody expr) = do res <- evalExpr expr
+                             return [res]
 evalCompr (ACIf expr compr) = do res <- evalExpr expr
                                  case res of
-                                    TrueVal -> evalCompr compr
-                                    FalseVal -> return $ ArrayVal []
-                                    _ -> fail "Not a boolean"
+                                   TrueVal  -> evalCompr compr
+                                   FalseVal -> return []
+                                   _ -> fail "Not a boolean"
+-- [for x in xs (if x == 2) x]
+evalCompr (ACFor ident expr compr) = do oldenv <- getEnv
+                                        -- oldvar <- getVar ident
+                                        let oldval = IntVal 1
+                                            x = (trace "oldenv: " oldenv)
+                                        bool <- exists ident oldenv
+                                        oldval <- getVar ident
+                                        arr <- evalExpr expr
+                                        case arr of
+                                          ArrayVal array -> do res <- func ident array compr
+                                                               modifyEnv (restoreEnv oldval ident (trace "oldenv: " oldenv))
+                                                               -- modifyEnv(\_ -> oldenv)
+                                                               return res
+                                          _ -> fail "Not an array"
 
-func :: Ident -> Value -> ArrayCompr -> SubsM Value
-func _ (ArrayVal []) _ = return $ ArrayVal []
-func i (ArrayVal arr) compr = do
-                      _ <- putVar i (head arr)
-                      case compr of
-                        ACIf expr c -> do res <- evalIf $ ACIf expr c
-                                          ArrayVal list <- func i (ArrayVal (tail arr)) compr
-                                          return $ ArrayVal $ res ++ list
-                        _ -> do res <- evalCompr compr
-                                ArrayVal list <- func i (ArrayVal (tail arr)) compr
-                                return $ ArrayVal $ res:list
-func _ _ _ = fail "func called with wrong parameters"
+restoreEnv :: Value -> Ident -> Env -> Env -> Env
+restoreEnv oldval ident oldenv newenv = if (Map.member ident oldenv) then (Map.insert ident oldval newenv) else (Map.delete ident newenv)
 
-evalIf :: ArrayCompr -> SubsM [Value]
-evalIf (ACIf expr compr) = do res <- evalExpr expr
-                              ret <- evalCompr compr
-                              case res of
-                                TrueVal -> return [ret]
-                                FalseVal -> return []
-                                _ -> fail "Error - if yielded other value than bool"
-evalIf _ = fail "evalIf compr is not an ACIf"
+func :: Ident -> [Value] -> ArrayCompr -> SubsM [Value]
+func _ [] _ = return []
+func ident (x:xs) compr = do _ <- putVar ident x
+                             xres <- evalCompr compr
+                             xsres <- func ident xs compr
+                             return $ xres ++ xsres
 
 helper :: [Expr] -> SubsM Value
 helper [] = return $ ArrayVal []
@@ -191,4 +203,5 @@ applyPrimitive pr val = case val of
 runExpr :: Expr -> Either Error Value
 runExpr expr = case (runSubsM $ evalExpr expr) initialContext of
   Left err -> Left err
+  Right (DummyVal, _) -> Left "Var not found"
   Right (val, _) -> Right val
