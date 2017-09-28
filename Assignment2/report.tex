@@ -1,0 +1,32 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\title{Advanced Programming Assignment 1 Report}
+\author{Mihai Popovici \texttt{MTF422} \and Leendert van Doorn \texttt{XBT504}}
+
+\begin{document}
+\maketitle
+
+\section{How to Run the Code}
+The code can be run by executing \texttt{stack install} followed by \texttt{stack test} in the top-level \texttt{src} folder.
+
+\section{Implemented Features}
+We have implemented most basic features of array comprehensions, but not all. Most importantly, scoping rules are not implemented correctly, as can be seen in our test called \texttt{Scope test}. Our implementation of array comprehensions do not allow for using the name of a variable in a \texttt{for} statement that has been used earlier. In this case, the earlier value will be overwritten by the last value of the array in the \texttt{for} statement. To remedy this, we need to implement functionality to save and replace the environment before and after evaluating the array comprehension respectively. We did not figure out how to do this with the monads. 
+
+		
+
+\section{SubsM Monad}
+The implementation of our \texttt{SubsM} monad is very similar to the \texttt{IntState} monad described during the lecture on monads. The \texttt{return} function will construct a monad with a function that takes a state, and returns the same state together with the value given to \texttt{return}. 
+
+The bind function will run the function contained in the monad in the context given, and will return a new monad where the input function is applied to the resulting value and the environment state is updated.
+
+We have no proof of our monad satisfying the monad laws. The only things we have to say for it is that our implementation works alright, and that two TAs looked at it and considered it fine.
+
+\section{Assessment}
+\subsection{Objective Assessment}
+We have created a test suite consisting of QuickCheck and HUnit. We have mostly used QuickCheck to check elementary functions, and HUnit to test compositions of expressions. We have written QuickCheck tests for almost all primitives and simple functions, and made a generator which generates (limited) expressions. At the time of writing, the OnlineTA system does not seem to be working, so we cannot base our assessment on those results.
+
+\subsection{Value Judgement}
+Based on the test suite we have written, we are confident that our code contains the functionality described in this report. We have not been able to test many corner cases for composite expressions, but based on the HUnit tests written, the array comprehension functionality seems to work well.
+
+\end{document}
