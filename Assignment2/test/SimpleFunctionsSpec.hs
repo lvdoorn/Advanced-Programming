@@ -6,8 +6,6 @@ import Test.QuickCheck
 
 import Control.Monad
 
-import Data.Map
-
 import SubsInterpreter
 import SubsAst
 

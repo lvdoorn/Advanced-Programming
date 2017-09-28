@@ -1,6 +1,8 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 
+\usepackage{hyperref}
+
 \title{Advanced Programming Assignment 1 Report}
 \author{Mihai Popovici \texttt{MTF422} \and Leendert van Doorn \texttt{XBT504}}
 
@@ -8,25 +10,32 @@
 \maketitle
 
 \section{How to Run the Code}
-The code can be run by executing \texttt{stack install} followed by \texttt{stack test} in the top-level \texttt{src} folder.
+The code can be run by executing \texttt{stack install} followed by \texttt{stack test} in the top-level \texttt{src} folder. To run onlineTA on the code, execute \mbox{\texttt{./onlineta.hs 1 .}} while in the top-level \texttt{src} folder.
 
-\section{Implemented Features}
-We have implemented most basic features of array comprehensions, but not all. Most importantly, scoping rules are not implemented correctly, as can be seen in our test called \texttt{Scope test}. Our implementation of array comprehensions do not allow for using the name of a variable in a \texttt{for} statement that has been used earlier. In this case, the earlier value will be overwritten by the last value of the array in the \texttt{for} statement. To remedy this, we need to implement functionality to save and replace the environment before and after evaluating the array comprehension respectively. We did not figure out how to do this with the monads. 
+\section{Main Implementation Ideas}		
+We have implemented all features necessary to evaluate SubScript expressions correctly. We started our implementation by writing the primitive functions. These were thoroughly tested with QuickCheck before moving on to the other features. After that, we implemented the SubsM Monad as discussed in Section \ref{monad}. To run an expression, we call the \texttt{evalExpr} function, which pattern matches the input and performs the necessary computations. Most functionality here is self-explanatory, save perhaps the array comprehensions. 
 
-		
+\subsection{Array Comprehensions}
+We have created a separate function to handle array comprehensions. Rather than \texttt{SubsM Value}, this function has return type \texttt{SubsM [Value]}, in order to allow empty lists to be processed easily. The most interesting case of \texttt{evalCompr} is the case to evaluate \texttt{ACFor}. In this case, we first save the old environment and the optional old value of the identifier (more about this later). Next, we evaluate the array over which to iterate and pass this array, together with the identifier and the \texttt{compr} to evaluate, to a recursive function called \texttt{func}, which recursively assigns each element of the given array to the given identifier, evaluates the result and concatenates all subresults into a list. After this, the \texttt{evalCompr} function uses \texttt{modifyEnv} and \texttt{restoreEnv} to restore the previous value of the identifier (if necessary). 
 
-\section{SubsM Monad}
+To make this work, we have had to change our initial implementation of the \texttt{getVar} function. Where this initially returned an error value in case a variable could not be found, this gave us a hard time checking whether a variable is in the old environment or not. To solve this, we have added a new value type, \texttt{DummyVal}, which will be returned in case a variable is not found. To keep the correct behaviour, we check in \texttt{runExpr} whether an expression evaluates to the dummy value, and if so, through the appropriate ``var not found" error message. We think that the only other way to fix this would be to change our monad implementation.
+
+\section{SubsM Monad}\label{monad}
 The implementation of our \texttt{SubsM} monad is very similar to the \texttt{IntState} monad described during the lecture on monads. The \texttt{return} function will construct a monad with a function that takes a state, and returns the same state together with the value given to \texttt{return}. 
 
 The bind function will run the function contained in the monad in the context given, and will return a new monad where the input function is applied to the resulting value and the environment state is updated.
 
-We have no proof of our monad satisfying the monad laws. The only things we have to say for it is that our implementation works alright, and that two TAs looked at it and considered it fine.
+We definitely think that our monad satisfies the monad laws. Although we cannot give a formal proof, we can firstly state that our implementation works correctly, and it relies fully on our monad. Furthermore, our monad is conceptually the same as Haskell's state monad, the implementation basically differs only in the fact that we use and \texttt{Either} around the \texttt{(a,env)} tuple. Based on this, we are confident that our monad satisfies the monad laws.
 
 \section{Assessment}
 \subsection{Objective Assessment}
-We have created a test suite consisting of QuickCheck and HUnit. We have mostly used QuickCheck to check elementary functions, and HUnit to test compositions of expressions. We have written QuickCheck tests for almost all primitives and simple functions, and made a generator which generates (limited) expressions. At the time of writing, the OnlineTA system does not seem to be working, so we cannot base our assessment on those results.
+We have created a test suite consisting of QuickCheck and HUnit tests. We have mostly used QuickCheck to check elementary functions, and HUnit to test compositions of expressions. We have written QuickCheck tests for almost all primitives and simple functions, and made a generator which generates (limited) expressions. 
+
+With our HUnit tests, we test end-to-end functionality, by calling \texttt{runExpr} on composite expressions. We mainly do this to test the array comprehensions, including tests dealing with scope and environment.
 
 \subsection{Value Judgement}
-Based on the test suite we have written, we are confident that our code contains the functionality described in this report. We have not been able to test many corner cases for composite expressions, but based on the HUnit tests written, the array comprehension functionality seems to work well.
+Based on the test suite we have written, we are confident that our code contains the functionality necessary to interpret the SubScript language. We get no errors on onlineTA, hlint and our own unit tests, so we have confidence in our code.  We have tested corner cases for composite expressions, mostly dealing with scope.
+
+Although tests can never be exhaustive, we believe that our code meets the requirements and can interpret the SubScript language correctly.
 
 \end{document}
