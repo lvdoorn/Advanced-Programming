@@ -70,3 +70,13 @@ spec = do
                   (Array [Var "x", Var "y"]))))
       `shouldBe`
       (Right (ArrayVal [IntVal 42, ArrayVal [IntVal 1, IntVal 2, IntVal 3]]))
+
+  describe "Nested for" $ do
+    it "evaluates a nested for" $ do
+      (runExpr $ Comma (Assign "xs"
+                        (Array [Number 1,Number 2,Number 3]))
+                       (Compr (ACFor "x"
+                                     (Var "xs")
+                                     (ACFor "y" (Var "xs") (ACBody (Number 0))))))
+      `shouldBe`
+      (Right (ArrayVal [IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0,IntVal 0]))
