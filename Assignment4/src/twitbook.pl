@@ -1,10 +1,3 @@
-g1([person(kara, [barry, clark]),
-    person(bruce, [clark, oliver]),
-    person(barry, [kara, oliver]),
-    person(clark, [oliver, kara]),
-    person(oliver, [kara])]).
-
-
 likes(G, X, Y) :- getFriendList(G, X, FriendList), 
                   elem(Y, FriendList).
 
@@ -22,14 +15,14 @@ isPopular(G, X, [Friend|RestFriends]) :- likes(G, Friend, X),
 outcast(G, X) :- getFriendList(G, X, FriendList),
                  isOutcast(G, X, FriendList).
 
-
 isOutcast(_, _, []).
 isOutcast(G, X, [Friend|RestFriends]) :- dislikes(G, Friend, X),
                                          isOutcast(G, X, RestFriends). 
 
 
-isHight(X, []).
-isHight(X, [H|T]) :- X>H, isHight(X,T).
+friendly(_, _).
+hostile(_, _).
+admires(_, _, _).
 
 isNotElemInFriendList(_, _, []). 
 isNotElemInFriendList(G, X, [Friend|RestFriends]) :- different(G, X, Friend),
