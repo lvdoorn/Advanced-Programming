@@ -8,6 +8,12 @@ g1([person(kara, [barry, clark]),
     person(clark, [oliver, kara]),
     person(oliver, [kara])]).
 
+g2([person(batman, [green_arrow, superman]),
+    person(green_arrow, [supergirl]),
+    person(supergirl, [flash, superman]),
+    person(flash, [green_arrow, supergirl]),
+    person(superman, [green_arrow, supergirl])]).
+
 :- begin_tests(likes).
 
 test(likes_succede, [true]) :- g1(G), likes(G, bruce, clark), !.
@@ -66,3 +72,11 @@ test(admires_succede, [true]) :- g1(G), admires(G, bruce, kara), !.
 test(admires_fail, [fail]) :- g1(G), admires(G, kara, bruce).
 
 :- end_tests(admires).
+
+:- begin_tests(same_world).
+
+test(same_world_succeed, [true]) :- g1(G), g2(H), same_world(G, H, A), A = [(kara,supergirl),(bruce,batman),(barry,flash),(clark,superman),(oliver,green_arrow)].
+test(same_world_fail, [fail]) :- g1(G), g2(H), H2 = [person(a, [b, c])|H], same_world(G, H2, _).
+
+:- end_tests(same_world).
+

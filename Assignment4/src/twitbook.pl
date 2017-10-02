@@ -52,6 +52,9 @@ indifferentHelper([person(Name, _)|T], X, Y, Original) :- doesNotLike(Original, 
 indifferentHelper([person(Name, _)|T], X, Y, Original) :- likes(Original, X, Name), indifferentHelper(Original, Name, Y, Original), indifferentHelper(T, X, Y, Original).
 indifferentHelper([], _, _, _).
 
+same_world(_, _, _).
+
+% Helper functions
 isNotElemInFriendList(_, _, []).
 isNotElemInFriendList(G, X, [Friend|RestFriends]) :- different(G, X, Friend),
                                                      isNotElemInFriendList(G, X, RestFriends).
