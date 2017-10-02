@@ -1,7 +1,6 @@
 %% swipl -f tests.pl -t run_tests
 
 :- consult(twitbook).
-:- use_module(library(lists)).
 
 g1([person(kara, [barry, clark]),
     person(bruce, [clark, oliver]),
@@ -49,14 +48,14 @@ test(outcast_all, all(X == [bruce,oliver])) :- g1(G), outcast(G, X).
 :- begin_tests(friendly).
 
 test(friendly_succede, [true]) :- g1(G), friendly(G, barry), !.
-test(friendly_fail, [fail]) :- g1(G), friendly(G, kara).
-test(friendly_all, all(X == [kara])) :- g1(G), friendly(G, X).
+test(friendly_succede, [true]) :- g1(G), friendly(G, bruce), !.
 
 :- end_tests(friendly).
 
 :- begin_tests(hostile).
 
 test(hostile_succede, [true]) :- g1(G), hostile(G, oliver), !.
+test(hostile_succede, [true]) :- g1(G), hostile(G, bruce), !.
 test(hostile_fail, [fail]) :- g1(G), hostile(G, kara).
 
 :- end_tests(hostile).
