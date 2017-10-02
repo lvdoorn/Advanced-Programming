@@ -39,7 +39,9 @@ isHostile([person(Name, _)|T], X, Original) :- likes(Original, Name, X),
 isHostile([person(_, Friendlist)|T], X, Original) :- isNotElemInFriendList(Original, X, Friendlist),
 	                                             isHostile(T, X, Original).
 
-admires(_, _, _).
+admires(G, X, Y) :- different(G, X, Y), admiresHelper(G, X, Y, [X]).
+admiresHelper(G, X, Y, _) :- likes(G, X, Y).
+admiresHelper(G, X, Y, List) :- likes(G, X, Z), isNotElemInFriendList(G, Z, List), admiresHelper(G, Z, Y, [Z|List]).
 
 isNotElemInFriendList(_, _, []).
 isNotElemInFriendList(G, X, [Friend|RestFriends]) :- different(G, X, Friend),
