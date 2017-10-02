@@ -1,10 +1,3 @@
-g1([person(kara, [barry, clark]),
-    person(bruce, [clark, oliver]),
-    person(barry, [kara, oliver]),
-    person(clark, [oliver, kara]),
-    person(oliver, [kara])]).
-
-
 likes(G, X, Y) :- getFriendList(G, X, FriendList),
                   elem(Y, FriendList).
 
@@ -30,18 +23,23 @@ friendly(G, X) :- isFriendly(G, X, G).
 
 isFriendly([], _, _).
 isFriendly([person(Name, _)|T], Name, Original) :- isFriendly(T, Name, Original).
-isFriendly([person(Name, _)|T], X, Original) :- likes(Original, Name, X), likes(Original, X, Name), isFriendly(T, X, Original).
-isFriendly([person(_, Friendlist)|T], X, Original) :- isNotElemInFriendList(Original, X, Friendlist), isFriendly(T, X, Original).
+isFriendly([person(Name, _)|T], X, Original) :- likes(Original, Name, X),
+	                                        likes(Original, X, Name),
+						isFriendly(T, X, Original).
+isFriendly([person(_, Friendlist)|T], X, Original) :- isNotElemInFriendList(Original, X, Friendlist),
+	                                              isFriendly(T, X, Original).
 
 hostile(G, X) :- isHostile(G, X, G).
 
 isHostile([], _, _).
 isHostile([person(Name, _)|T], Name, Original) :- isHostile(T, Name, Original).
-isHostile([person(Name, _)|T], X, Original) :- likes(Original, Name, X), dislikes(Original, X, Name), isHostile(T, X, Original).
-isHostile([person(_, Friendlist)|T], X, Original) :- isNotElemInFriendList(Original, X, Friendlist), isHostile(T, X, Original).
+isHostile([person(Name, _)|T], X, Original) :- likes(Original, Name, X),
+	                                       dislikes(Original, X, Name),
+					       isHostile(T, X, Original).
+isHostile([person(_, Friendlist)|T], X, Original) :- isNotElemInFriendList(Original, X, Friendlist),
+	                                             isHostile(T, X, Original).
 
-isHight(_, []).
-isHight(X, [H|T]) :- X>H, isHight(X,T).
+admires(_, _, _).
 
 isNotElemInFriendList(_, _, []).
 isNotElemInFriendList(G, X, [Friend|RestFriends]) :- different(G, X, Friend),
