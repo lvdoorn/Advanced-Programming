@@ -44,21 +44,13 @@ admires(G, X, Y) :- different(G, X, Y), admiresHelper(G, X, Y, [X, Y]).
 admiresHelper(G, X, Y, _) :- likes(G, X, Y).
 admiresHelper(G, X, Y, List) :- doesNotLike(G, X, Y), likes(G, X, Z), isNotElemInFriendList(G, Z, List), admiresHelper(G, Z, Y, [Z|List]).
 
+%% Works but will return the correct answer an infinite amount of
+%% times.
 indifferent(G, X, Y) :- different(G, X, Y), doesNotLike(G, X, Y), indifferentHelper(G, X, Y, G).
 indifferentHelper([person(Name, _)|T], Name, Y, Original) :- indifferentHelper(T, Name, Y, Original). % Everyone is indifferent to themselves for this predicate
 indifferentHelper([person(Name, _)|T], X, Y, Original) :- doesNotLike(Original, Name, Y), indifferentHelper(T, X, Y, Original).
 indifferentHelper([person(Name, _)|T], X, Y, Original) :- likes(Original, X, Name), indifferentHelper(Original, Name, Y, Original), indifferentHelper(T, X, Y, Original).
-
-%
-%	indifferent(G, X, Y) :- getFriendList(G, X, Friendlist),
-% indifferentHelper(G, X, Y, Friendlist).
-% indifferentHelper(G, X, Y, Friendlist) :- isNotElemInFriendList(G, Y,
-% Friendlist).
-%
-% For every member in the graph we check if:
-%     - either X does not like him and we are done
-%     - or X does like him and we need to check that he does not like Y,
-%	nor likes anyone that likes Y
+indifferentHelper([], _, _, _).
 
 isNotElemInFriendList(_, _, []).
 isNotElemInFriendList(G, X, [Friend|RestFriends]) :- different(G, X, Friend),
