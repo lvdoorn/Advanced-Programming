@@ -7,11 +7,19 @@
 \maketitle
 
 \section{How to Run the Code}
-
+Our \texttt{src} folder contains 2 files:
+\begin{itemize}
+	\item \texttt{twitbook.pl} where the main implementation of the required predicates are situated;
+	\item \texttt{tests.pl} with all unit tests for predicates in \texttt{twitbook.pl}.  
+\end{itemize} 
+We run our tests by \texttt{'swipl -f tests.pl -t run\_tests'} command in the root folder.
+If we want to run some specific tests or check manually predicates, we run \texttt{'swipl tests.pl'}. This is possible because \texttt{tests.pl} file contains a reference to \texttt{twitbook.pl} file.
 
 \section{Implementation Details}
 
 
 \section{Assessment of Implementation}
+
+
 
 \end{document}
