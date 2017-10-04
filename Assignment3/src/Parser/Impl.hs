@@ -48,13 +48,17 @@ parentheses = do
 -- Parses a factor as specified in the grammar
 parseFactor :: Parser Expr
 parseFactor = whitespace $
-                  choice [ number
+                  choice [ try parseArrayArrayFor
+                         , parseArray
+                         , try parseFunctionCall
+                         , number
                          , parentheses
                          , try parseIdent
                          , stringParser
                          , parseTrue
                          , try parseFalse
                          , parseUndefined
+                         
                          ]
 
 -- Parses a Term in the grammar
@@ -128,10 +132,7 @@ parseExpr' input = (do
 
 -- Parses an Expr1 in the grammar
 parseExpr1 :: Parser Expr
-parseExpr1 = choice [ try parseArrayArrayFor
-                    , parseArray
-                    , try parseFunctionCall
-                    , try parseAssignment
+parseExpr1 = choice [ try parseAssignment
                     , parseAssignable
                     ]
 
