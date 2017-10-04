@@ -37,7 +37,7 @@ main = do args <- getArgs
               run $ read s
             ["-p", file] -> do
               p <- parseFile file
-              putStrLn $ show p
+              print p
             [file] -> do
               pp <- parseFile file
               case pp of

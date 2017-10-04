@@ -164,7 +164,7 @@ parseArrayArrayFor = do
 parseArrayFor :: Parser ArrayCompr
 parseArrayFor = do
                    _ <- try $ whitespace $ parseKeyword "for"
-                   _ <- whitespace $ char '(' -- TODO replace with between combinator
+                   _ <- whitespace $ char '('
                    Var ident <- whitespace parseIdent
                    _ <- whitespace $ parseKeyword "of"
                    expr1 <- whitespace parseExpr1
