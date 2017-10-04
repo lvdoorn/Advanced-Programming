@@ -20,7 +20,7 @@ isOutcast(_, _, []).
 isOutcast(G, X, [Friend|RestFriends]) :- dislikes(G, Friend, X),
                                          isOutcast(G, X, RestFriends).
 
-friendly(G, X) :- isFriendly(G, X, G).
+friendly(G, X) :- isPerson(G, X), isFriendly(G, X, G).
 
 isFriendly([], _, _).
 isFriendly([person(Name, _)|T], Name, Original) :- isFriendly(T, Name, Original).
@@ -30,7 +30,7 @@ isFriendly([person(Name, _)|T], X, Original) :- likes(Original, Name, X),
 isFriendly([person(_, Friendlist)|T], X, Original) :- isNotElemInFriendList(Original, X, Friendlist),
 	                                              isFriendly(T, X, Original).
 
-hostile(G, X) :- isHostile(G, X, G).
+hostile(G, X) :- isPerson(G, X), isHostile(G, X, G).
 
 isHostile([], _, _).
 isHostile([person(Name, _)|T], Name, Original) :- isHostile(T, Name, Original).
@@ -70,3 +70,6 @@ removeElem(X, [H|T], [H|T1]) :- removeElem(X, T, T1).
 %% different = Should be able to remove twice from G <=> X, Y distinct
 different(G, X, Y) :- removeElem(person(X, _), G, NewG),
                       removeElem(person(Y, _), NewG, _).
+
+isPerson([person(name, _)|_], Name).
+isPerson([_|T], Name) :- isPerson(T, Name).
