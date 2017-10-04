@@ -55,6 +55,9 @@ test(outcast_all, all(X == [bruce,oliver])) :- g1(G), outcast(G, X).
 
 test(friendly_succede, [true]) :- g1(G), friendly(G, barry), !.
 test(friendly_succede, [true]) :- g1(G), friendly(G, bruce), !.
+test(friendly_fail, [fail]) :- g1(G), friendly(G, kara).
+test(friendly_emptyG_fail, [fail]) :- friendly([], kara).
+
 
 :- end_tests(friendly).
 
@@ -72,6 +75,14 @@ test(admires_succede, [true]) :- g1(G), admires(G, bruce, kara), !.
 test(admires_fail, [fail]) :- g1(G), admires(G, kara, bruce).
 
 :- end_tests(admires).
+
+:- begin_tests(indifferent).
+
+test(indifferent_succede, [true]) :- g1(G), indifferent(G, kara, bruce), !.
+test(indifferent_fail, [fail]) :- g1(G), indifferent(G, bruce, kara).
+
+:- end_tests(indifferent).
+
 
 :- begin_tests(same_world).
 

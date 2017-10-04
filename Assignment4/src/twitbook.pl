@@ -71,5 +71,5 @@ removeElem(X, [H|T], [H|T1]) :- removeElem(X, T, T1).
 different(G, X, Y) :- removeElem(person(X, _), G, NewG),
                       removeElem(person(Y, _), NewG, _).
 
-isPerson([person(name, _)|_], Name).
+isPerson([person(Name, _)|_], Name).
 isPerson([_|T], Name) :- isPerson(T, Name).
