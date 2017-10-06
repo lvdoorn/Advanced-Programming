@@ -1,6 +1,13 @@
 -module(simple_test).
--export([test/0]).
+-export([runall/0
+       , test/0
+       , testStart/0
+       ]).
 
+
+runall() -> 
+  test(),
+  testStart().
 
 test() -> 
   {ok, Server} = kaboose:start(),
@@ -8,4 +15,9 @@ test() ->
   _ = kaboose:add_question(Room, {"abcd?", ["abc", {correct, "def"}]}),
   _ = kaboose:add_question(Room, {"abc?", ["abc", {correct, "def"}]}),
   _ = kaboose:add_question(Room, {"ab?", ["abc", {correct, "def"}]}),
-  List = kaboose:get_questions(Room).
+  List = kaboose:get_questions(Room),
+  IOList = io_lib:format("~w", [List]),
+  FlatList = lists:flatten(IOList),
+  io:fwrite(FlatList).
+testStart() -> 
+  {ok, Server} = kaboose:start().
