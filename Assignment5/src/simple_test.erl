@@ -1,23 +1,19 @@
 -module(simple_test).
--export([runall/0
-       , test/0
-       , testStart/0
-       ]).
+-include_lib("eunit/include/eunit.hrl").
 
-
-runall() -> 
-  test(),
-  testStart().
-
-test() -> 
+demo_test() -> 
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
-  _ = kaboose:add_question(Room, {"abcd?", ["abc", {correct, "def"}]}),
-  _ = kaboose:add_question(Room, {"abc?", ["abc", {correct, "def"}]}),
-  _ = kaboose:add_question(Room, {"ab?", ["abc", {correct, "def"}]}),
+  _ = kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  _ = kaboose:add_question(Room, {"b?", ["a", {correct, "b", "c"}]}),
+  _ = kaboose:add_question(Room, {"c?", ["a", "b", {correct, "c"}]}),
   List = kaboose:get_questions(Room),
-  IOList = io_lib:format("~w", [List]),
-  FlatList = lists:flatten(IOList),
-  io:fwrite(FlatList).
-testStart() -> 
-  {ok, Server} = kaboose:start().
+  ?assertEqual([{"a?", [{correct, "a"}, "b", "c"]}, {"b?", ["a", {correct, "b", "c"}]}, {"c?", ["a", "b", {correct, "c"}]}], List).
+
+start_test() -> 
+  {ok, _} = kaboose:start().
+
+get_a_room_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, _} = kaboose:get_a_room(Server).
+
