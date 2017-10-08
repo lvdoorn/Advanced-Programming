@@ -31,3 +31,21 @@ add_question_wrong_type_answer_test() ->
   {ok, Room} = kaboose:get_a_room(Server),
   ?assertEqual({error, wrong_type_answer}, kaboose:add_question(Room, {"a?"}, [{correct, "a"}, 1])).
 
+join_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, _} = kaboose:join(ActiveRoom, "Nickname").
+
+leave_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  kaboose:leave(ActiveRoom, Ref).
+
+leave_non_existent_player_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:leave(ActiveRoom, self()).

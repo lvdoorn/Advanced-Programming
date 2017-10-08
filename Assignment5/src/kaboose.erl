@@ -59,41 +59,56 @@ roomLoop(Questions) ->
       roomLoop(Questions);
 
     {From, play} -> 
-      From ! {self(), {spawn(fun() -> activeRoomLoop([dummy|Questions], [], From, false) end), From}},
+      From ! {self(), {spawn(fun() -> activeRoomLoop([{"dummy", ["dummy"]}|Questions], #{}, From, false, [], #{}, #{}) end), From}},
       roomLoop(Questions)
   end.
 
-activeRoomLoop(Questions, Players, CRef, Active) -> 
+
+
+% activeRoomLoop works like this: we start with a dummy question which is inactive
+% when next/1 is called, we return the second element in the questions list and make it active.
+% when timesup/1 is called, the current question is simply made inactive.
+
+% Players: Map(Ref -> {Nickname, Active[true/false]})
+
+activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total) -> 
+  Questions = [{Description, Answers}|T],
   receive
 
   % next
     {From, next} -> 
       From ! {self(), {ok, lists:nth(2, Questions)}},
-      activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true); % TODO errors
+      activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, [], #{}, #{}); % TODO errors
 
   % timesup
-    {_From, timesup} ->
-      activeRoomLoop(Questions, Players, CRef, false);% TODO return
+    {From, timesup} ->
+      % TODO: calculate final
+      From ! {ok, Dist, LastQ, Total, false},
+      % TODO: calculate score.
+      activeRoomLoop(Questions, Players, CRef, false, Dist, #{}, #{}); % TODO return
 
   % join
-    {_From, {join, Nick}} ->
-      activeRoomLoop(Questions, [Nick|Players], CRef, Active);% TODO return
-    % TODO: send message to conductor
-    % TODO: error if Nick is taken
-    % TODO: keep list of Refs returned mapped to players
+    {From, {join, Nick}} ->
+      From ! {self(), {ok, From}},
+      activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, Total);
+      % TODO: send message to conductor
+      % TODO: error if Nick is taken
 
-
-
-  % leave
-    {_From, {leave, _Ref}} ->
-      todo;
+  %leave
+    {From, {leave, Ref}} ->
+      % TODO: inform conductor.
+      From ! {self() , ok},
+      {Name, _} = maps:get(Ref, Players),
+      activeRoomLoop(Questions, maps:put(From, {Name, false}), CRef, Active, Dist, LastQ, Total);
   
   % rejoin
-    {_From, {rejoin, _Ref}} ->
-      todo;
+    {From, {rejoin, Ref}} ->
+      From ! {self() , ok},
+      {Name, _} = maps:get(Ref, Players),
+      activeRoomLoop(Questions, maps:put(Ref, {Name, true}), CRef, Active, Dist, LastQ, Total);
 
   % guess
-    {_From, {guess, _Ref, _Index}} ->
-      todo
+    {From, {guess, Ref, Index}} ->
+      From ! {self(), ok}.
 
   end.
