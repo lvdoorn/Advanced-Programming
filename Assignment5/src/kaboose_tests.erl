@@ -25,44 +25,41 @@ validate_non_empty_string_test() ->
   ok = kaboose:validateNonEmptyString("valid string").
 
 invalid_non_empty_string_test() ->
-  ?_assertException(error, _, kaboose:validateNonEmptyString(invalidString)).
+  ?assertEqual(not_a_non_empty_string, kaboose:validateNonEmptyString(invalidString)).
 
 invalid_empty_string_test() ->
-  ?_assertException(error, _, kaboose:validateNonEmptyString("")).
+  ?assertEqual(not_a_non_empty_string, kaboose:validateNonEmptyString("")).
 
 invalid_answer_test() ->
-  ?_assertException(error, _, kaboose:validateAnswer(["a", 1, {correct, "c"}])).
+  ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", 1, {correct, "c"}])).
 
 invalid_answer_empty_string_test() ->
-  ?_assertException(error, _, kaboose:validateAnswer(["a", "", {correct, "c"}])).
+  ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", "", {correct, "c"}])).
 
 invalid_answer_no_correct_test() ->
-  ?_assertException(error, _, kaboose:validateAnswer(["a", "b", "c"])).
+  ?assertEqual(no_correct_options, kaboose:validateAnswer(["a", "b", "c"])).
 
 invalid_answer_type_test() ->
-  ?_assertException(error, _, kaboose:validateAnswer(["a", "d", {correct, "c", "b"}])).
+  ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", "d", {correct, "c", "b"}])).
 
 invalid_answer_correct_type_test() ->
-  ?_assertException(error, _, kaboose:validateAnswer(["a", "s", {incorrect, "c"}])).
+  ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", "s", {incorrect, "c"}])).
 
-
-get_a_room_exception_test() ->
-  {error,badarg} = kaboose:get_a_room(1).
 
 add_question_no_correct_answer_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
-  ?assertEqual({error, "Answer does not have any correct options"}, kaboose:add_question(Room, {"a?", ["a", "b", "c"]})).
+  ?assertEqual({error, no_correct_options}, kaboose:add_question(Room, {"a?", ["a", "b", "c"]})).
 
 add_question_wrong_type_answer_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
-  ?assertEqual({error, "Answer format is invalid"}, kaboose:add_question(Room, {"a?", [{correct, "a"}, 1]})).
+  ?assertEqual({error, answer_format_is_invalid}, kaboose:add_question(Room, {"a?", [{correct, "a"}, 1]})).
 
 add_question_description_empty_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
-  ?assertEqual({error, "The input is not a non empty string"}, kaboose:add_question(Room, {"", [{correct, "a"}, 1]})).
+  ?assertEqual({error, not_a_non_empty_string}, kaboose:add_question(Room, {"", [{correct, "a"}, 1]})).
 
 join_test() ->
   {ok, Server} = kaboose:start(),
