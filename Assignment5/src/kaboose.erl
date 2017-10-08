@@ -12,11 +12,26 @@
        , guess/3]).
 -import(maps, [new/0, find/2, get/2]).
 
-start() -> {ok, spawn(fun loop/0)}.
+wrapInTry(F) -> try F()
+                catch
+                    _:Error -> {error, Error}
+                end.
 
-get_a_room(Server) -> request_reply(Server, new_room).
+start() -> wrapInTry(fun() -> 
+                        {ok, spawn(fun loop/0)}
+                     end).
 
-add_question(Room, {Description, Answers}) -> request_reply(Room, {add_question, {Description, Answers}}).
+get_a_room(Server) -> wrapInTry(fun() -> 
+                                  request_reply(Server, new_room)
+                                end).
+
+add_question(Room, Question) -> wrapInTry(fun() -> 
+                                  case Question of
+                                    {Description, Answers} ->
+                                      request_reply(Room, {add_question, {Description, Answers}});
+                                    _ -> throw("Question format is invalid.")
+                                  end
+                                end).
 
 get_questions(Room) -> request_reply(Room, get_questions).
 
@@ -109,6 +124,6 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
 
   % guess
     {From, {guess, Ref, Index}} ->
-      From ! {self(), ok}.
+      From ! {self(), ok}
 
   end.

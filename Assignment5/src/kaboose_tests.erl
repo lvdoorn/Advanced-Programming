@@ -21,6 +21,9 @@ get_a_room_test() ->
   {ok, Server} = kaboose:start(),
   {ok, _} = kaboose:get_a_room(Server).
 
+get_a_room_exception_test() ->
+  {error,badarg} = kaboose:get_a_room(1).
+
 add_question_no_correct_answer_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
