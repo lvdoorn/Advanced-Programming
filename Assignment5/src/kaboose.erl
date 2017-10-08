@@ -9,7 +9,10 @@
        , join/2
        , leave/2
        , rejoin/2
-       , guess/3]).
+       , guess/3
+       , validateNonEmptyString/1
+       , validateAnswer/1
+       , isNonEmptyString/1]).
 -import(maps, [new/0, find/2, get/2]).
 
 wrapInTry(F) -> try F()
@@ -28,6 +31,8 @@ get_a_room(Server) -> wrapInTry(fun() ->
 add_question(Room, Question) -> wrapInTry(fun() -> 
                                   case Question of
                                     {Description, Answers} ->
+                                      validateNonEmptyString(Description),
+                                      validateAnswer(Answers),
                                       request_reply(Room, {add_question, {Description, Answers}});
                                     _ -> throw("Question format is invalid.")
                                   end
@@ -127,3 +132,32 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
       From ! {self(), ok}
 
   end.
+
+% Input validation section
+isNonEmptyString(Str) -> io_lib:printable_list(Str) andalso Str =/= "".
+                                
+
+validateNonEmptyString(Str) -> case isNonEmptyString(Str) of
+                                true -> ok;
+                                false -> throw("The input is not a non empty string")
+                              end.
+
+% Answer is list, not empty
+validateAnswer(List) -> case is_list(List) andalso List =/= [] of
+                          true -> validateAnswerHelper(List, false);
+                          false -> throw("Answer format is not a non empty list") 
+                        end.
+
+% Answer list: at least one {correct, _}, non empty strings, {correct, "non empty string"} 
+validateAnswerHelper([], HasCorrectOption) -> case HasCorrectOption of
+                                                true -> ok;
+                                                false -> throw("Answer does not have any correct options")
+                                              end;
+validateAnswerHelper([{correct, Text} | T], _) -> throwOrContinue(Text, T, true);
+validateAnswerHelper([Text | T], HasCorrectOption) -> throwOrContinue(Text, T, HasCorrectOption);
+validateAnswerHelper(_, _) -> throw("Answer format is invalid").
+
+throwOrContinue(Text, T, HasCorrectOption) -> case isNonEmptyString(Text) of 
+                                                true -> validateAnswerHelper(T, HasCorrectOption); 
+                                                false -> throw("Answer format is invalid")
+                                              end.
