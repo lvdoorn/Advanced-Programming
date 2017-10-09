@@ -61,6 +61,15 @@ add_question_description_empty_test() ->
   {ok, Room} = kaboose:get_a_room(Server),
   ?assertEqual({error, not_a_non_empty_string}, kaboose:add_question(Room, {"", [{correct, "a"}, 1]})).
 
+next_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  kaboose:add_question(Room, {"z?", ["x", {correct, "z"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:next(ActiveRoom),
+  ?assertEqual({error, has_active_question}, kaboose:next(ActiveRoom)).
+
 join_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),

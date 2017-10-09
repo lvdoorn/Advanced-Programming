@@ -55,7 +55,7 @@ loop() ->
         try
             From ! {self(), {ok, spawn(fun() -> roomLoop([]) end)}}
         catch
-            _:Error -> request_reply_async(From, {error, Error})
+            _:Error -> request_reply_async(From, errorTuple(Error))
         after 
             loop()
         end
@@ -65,9 +65,9 @@ loop() ->
 roomLoop(Questions) ->
   receive
     {From, {add_question, Question}} ->
-      {V1, V2} = validateQuestion(Question, From),
+      IsQuestionValid = validateQuestion(Question, From),
 
-      case V1 =:= ok andalso V2 =:= ok of
+      case IsQuestionValid of
         true -> From ! {self(), ok},
                 roomLoop(Questions ++ [Question]);
         false -> roomLoop(Questions)
@@ -96,9 +96,14 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
 
   % next
     {From, next} -> 
-      From ! {self(), {ok, lists:nth(2, Questions)}},
-      activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, [], #{}, #{}); % TODO errors
+      IsNextValid = validateNextQuestion(From, CRef, Active),
 
+      case IsNextValid of
+        true -> From ! {self(), {ok, lists:nth(2, Questions)}},
+                activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, [], #{}, #{}); % TODO errors
+        false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total)
+      end;
+      
   % timesup
     {From, timesup} ->
       % TODO: calculate final
@@ -134,35 +139,48 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
 
 wrapInTry(F) -> try F()
                 catch
-                    _:{From, Error} -> From ! {self(), {error, Error}};
-                    _:Error -> {error, Error}
+                    _:{From, Error} -> From ! {self(), errorTuple(Error)};
+                    _:Error -> errorTuple(Error)
                 end.
 
 
+errorTuple(Msg) -> {error, Msg}.
+
 validateQuestion(Question, From) ->
-   Q = case Question of
-         {_, _} -> Question;
-           _ -> request_reply_async(From, {error, format_is_invalid}), false
-        end,
+   IsQuestionValid = case Question of
+                        {_, _} -> Question;
+                        _ -> request_reply_async(From, errorTuple(format_is_invalid)), false
+                     end,
 
-   V1 = case Q of
-         {Description, _} ->
-          case validateNonEmptyString(Description) of
-            ok -> ok;
-            Msg -> request_reply_async(From, {error, Msg}), false
-          end;
-        false -> false
-        end,
+   IsDescValid = case IsQuestionValid of
+                   {Description, _} ->
+                    case validateNonEmptyString(Description) of
+                      ok -> ok;
+                      Msg -> request_reply_async(From, errorTuple(Msg)), false
+                    end;
+                  false -> false
+                  end,
 
-   V2 = case Q of
-        {_, Answer} ->
-          case validateAnswer(Answer) of
-            ok -> ok;
-            Msg1 -> request_reply_async(From, {error, Msg1}), false
-          end;
-        false -> false
-        end,
-{V1, V2}.
+   IsAnswerValid = case IsQuestionValid of
+                    {_, Answer} ->
+                      case validateAnswer(Answer) of
+                        ok -> ok;
+                        Msg1 -> request_reply_async(From, errorTuple(Msg1)), false
+                      end;
+                    false -> false
+                   end,
+IsDescValid =:= ok andalso IsAnswerValid =:= ok.
+
+validateNextQuestion(From, CRef, Active) ->
+  IsConductor = case From =:= CRef of
+                      true -> true;
+                      false -> request_reply_async(From, errorTuple(who_are_you)), false
+                    end,
+  HasNoActiveQuestion = case Active of 
+                          true -> request_reply_async(From, errorTuple(has_active_question)), false;
+                          false -> true
+                        end,
+  IsConductor andalso HasNoActiveQuestion.
 
 
 % Input validation section
