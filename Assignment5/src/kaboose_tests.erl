@@ -45,6 +45,8 @@ invalid_answer_type_test() ->
 invalid_answer_correct_type_test() ->
   ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", "s", {incorrect, "c"}])).
 
+isConductor_test() ->
+  ?assertEqual(true, kaboose:isConductor(self(), self(), who_are_you)).
 
 add_question_no_correct_answer_test() ->
   {ok, Server} = kaboose:start(),
@@ -74,6 +76,22 @@ next_test() ->
   kaboose:timesup(ActiveRoom),
   ?assertEqual({ok, {"c?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom)).
 
+next_has_active_question_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  kaboose:add_question(Room, {"z?", ["x", {correct, "z"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:next(ActiveRoom),
+  ?assertEqual({error, has_active_question}, kaboose:next(ActiveRoom)).
+
+timesup_no_question_asked_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  kaboose:add_question(Room, {"z?", ["x", {correct, "z"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  ?assertEqual({error, no_question_asked}, kaboose:timesup(ActiveRoom)).
 
 join_test() ->
   {ok, Server} = kaboose:start(),
