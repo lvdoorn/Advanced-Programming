@@ -13,13 +13,18 @@
        , counters/1
        , defaultMap/1
        , activePlayers/1
+       , validateNonEmptyString/1
+       , validateAnswer/1
+       , isNonEmptyString/1
        ]).
 
-start() -> {ok, spawn(fun loop/0)}.
+start() -> wrapInTry(fun() -> 
+                        {ok, spawn(fun loop/0)}
+                     end).
 
 get_a_room(Server) -> request_reply(Server, new_room).
 
-add_question(Room, {Description, Answers}) -> request_reply(Room, {add_question, {Description, Answers}}).
+add_question(Room, Question) -> request_reply(Room, {add_question, Question}).
 
 get_questions(Room) -> request_reply(Room, get_questions).
 
@@ -44,18 +49,32 @@ request_reply(Pid, Request) ->
     {Pid, Response} -> Response
   end.
 
+request_reply_async(Pid, Request) ->
+  Pid ! {self(), Request}.
+
 loop() ->
-  receive
-    {From, new_room} -> 
-      From ! {self(), {ok, spawn(fun() -> roomLoop([]) end)}},
-      loop()
+    receive
+      {From, new_room} -> 
+        try
+            From ! {self(), {ok, spawn(fun() -> roomLoop([]) end)}}
+        catch
+            _:Error -> request_reply_async(From, {error, Error})
+        after 
+            loop()
+        end
   end.
+
 
 roomLoop(Questions) ->
   receive
-    {From, {add_question, {Description, Answers}}} ->
-      From ! {self(), ok},
-      roomLoop(Questions ++ [{Description, Answers}]); % TODO: check input and return error if necessary. 
+    {From, {add_question, Question}} ->
+      {V1, V2} = validateQuestion(Question, From),
+
+      case V1 =:= ok andalso V2 =:= ok of
+        true -> From ! {self(), ok},
+                roomLoop(Questions ++ [Question]);
+        false -> roomLoop(Questions)
+      end;
 
     {From, get_questions} ->
       From ! {self(), Questions},
@@ -65,7 +84,7 @@ roomLoop(Questions) ->
       From ! {self(), {spawn(fun() -> activeRoomLoop([{"dummy", ["dummy"]}|Questions], #{}, From, false, [], #{}, #{}) end), From}},
       roomLoop(Questions)
   end.
-
+ 
 
 
 % activeRoomLoop works like this: we start with a dummy question which is inactive
@@ -181,3 +200,65 @@ loop(State) ->
     From ! {self(), State},
     loop(State)
   end.
+
+wrapInTry(F) -> try F()
+                catch
+                    _:{From, Error} -> From ! {self(), {error, Error}};
+                    _:Error -> {error, Error}
+                end.
+
+
+validateQuestion(Question, From) ->
+   Q = case Question of
+         {_, _} -> Question;
+           _ -> request_reply_async(From, {error, format_is_invalid}), false
+        end,
+
+   V1 = case Q of
+         {Description, _} ->
+          case validateNonEmptyString(Description) of
+            ok -> ok;
+            Msg -> request_reply_async(From, {error, Msg}), false
+          end;
+        false -> false
+        end,
+
+   V2 = case Q of
+        {_, Answer} ->
+          case validateAnswer(Answer) of
+            ok -> ok;
+            Msg1 -> request_reply_async(From, {error, Msg1}), false
+          end;
+        false -> false
+        end,
+{V1, V2}.
+
+
+% Input validation section
+isNonEmptyString(Str) -> io_lib:printable_list(Str) andalso Str =/= "".
+                                
+
+validateNonEmptyString(Str) -> case isNonEmptyString(Str) of
+                                true -> ok;
+                                false -> not_a_non_empty_string
+                              end.
+
+% Answer is list, not empty
+validateAnswer(List) -> case is_list(List) andalso List =/= [] of
+                          true -> validateAnswerHelper(List, false);
+                          false -> not_a_non_empty_list
+                        end.
+
+% Answer list: at least one {correct, _}, non empty strings, {correct, "non empty string"} 
+validateAnswerHelper([], HasCorrectOption) -> case HasCorrectOption of
+                                                true -> ok;
+                                                false -> no_correct_options
+                                              end;
+validateAnswerHelper([{correct, Text} | T], _) -> throwOrContinue(Text, T, true);
+validateAnswerHelper([Text | T], HasCorrectOption) -> throwOrContinue(Text, T, HasCorrectOption);
+validateAnswerHelper(_, _) -> format_is_invalid.
+
+throwOrContinue(Text, T, HasCorrectOption) -> case isNonEmptyString(Text) of 
+                                                true -> validateAnswerHelper(T, HasCorrectOption); 
+                                                false -> answer_format_is_invalid
+                                              end.
