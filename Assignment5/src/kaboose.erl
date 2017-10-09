@@ -10,10 +10,13 @@
        , leave/2
        , rejoin/2
        , guess/3
+       , counters/1
+       , defaultMap/1
+       , activePlayers/1
        , validateNonEmptyString/1
        , validateAnswer/1
-       , isNonEmptyString/1]).
--import(maps, [new/0, find/2, get/2]).
+       , isNonEmptyString/1
+       ]).
 
 start() -> wrapInTry(fun() -> 
                         {ok, spawn(fun loop/0)}
@@ -92,9 +95,13 @@ roomLoop(Questions) ->
 
 activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total) -> 
   Questions = [{Description, Answers}|T],
-  receive
+  _FirstQ = if
+    (Answers =:= ["dummy"]) -> true;
+    true -> false
+  end,
 
-  % next
+  receive
+  % next, LastQ is reset here
     {From, next} -> 
       IsNextValid = validateNextQuestion(From, CRef, Active),
 
@@ -106,35 +113,96 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
       
   % timesup
     {From, timesup} ->
-      % TODO: calculate final
-      From ! {ok, Dist, LastQ, Total, false},
-      % TODO: calculate score.
-      activeRoomLoop(Questions, Players, CRef, false, Dist, #{}, #{}); % TODO return
+      Final = if
+        T =:= [] -> true;
+        true -> false
+      end,
+      maps:map(fun(K, V) -> increment(maps:get(K, Total), V) end, LastQ),% TODO verify that this works
+      From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), LastQ, Total, Final}},
+      activeRoomLoop(Questions, Players, CRef, false, Dist, LastQ, Total);
 
   % join
     {From, {join, Nick}} ->
       From ! {self(), {ok, From}},
+      CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
       activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, Total);
       % TODO: send message to conductor
       % TODO: error if Nick is taken
 
   %leave
     {From, {leave, Ref}} ->
-      % TODO: inform conductor.
+      % TODO: check if player actually exists.
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
+      CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
       activeRoomLoop(Questions, maps:put(From, {Name, false}), CRef, Active, Dist, LastQ, Total);
   
   % rejoin
     {From, {rejoin, Ref}} ->
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
+      CRef ! {CRef, {player_joined, Name, activePlayers(Players) + 1}},
       activeRoomLoop(Questions, maps:put(Ref, {Name, true}), CRef, Active, Dist, LastQ, Total);
 
   % guess
     {From, {guess, Ref, Index}} ->
-      From ! {self(), ok}
+      From ! {self(), ok},
+      % TODO check index and if question is active
+      {_Name, _} = maps:get(Ref, Players), % TODO create function for this
+      % TODO incorporate time bonus
+      increment(lists:nth(Index, Dist)),
+      % Score = 500, % TODO ^
+      % case lists:nth(Index, Answers) of
+      %   {correct, _} -> 
 
+      activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total)
+
+  end.
+
+% Returns a list of length Length filled with counters.
+counters(0) -> [];
+counters(Length) -> [startC()|counters(Length - 1)].
+
+defaultMap([]) -> #{};
+defaultMap([H|T]) -> maps:put(H, startC(), defaultMap(T)).
+
+% activePlayers(Map) -> length(lists:filter(fun(V) -> case V of {_, true} -> true; (_) -> false end, maps:values(Map))).
+activePlayers(Map) -> length(lists:filter(fun(V) -> matchV(V) end, maps:values(Map))).
+matchV(V) -> case V of 
+  {_, true} -> true;
+  (_) -> false
+end.
+
+
+startC() -> spawn(fun () -> loop(0) end).
+
+% Increments a counter by one.
+increment(Pid) ->
+  request_reply(Pid, inc).
+
+% Increments a counter by Amount.
+increment(Pid, Amount) ->
+ request_reply(Pid, {inc, Amount}).
+
+% Returns the value of a counter.
+getC(Pid) ->
+  request_reply(Pid, get).
+
+loop(State) ->
+  receive
+    {From, inc} ->
+    NewState = State + 1,
+    From ! {self(), NewState},
+    loop(NewState);
+
+    {From, {inc, Amount}} ->
+    NewState = State + Amount,
+    From ! {self(), NewState},
+    loop(NewState);
+
+    {From, get} ->
+    From ! {self(), State},
+    loop(State)
   end.
 
 wrapInTry(F) -> try F()

@@ -88,3 +88,13 @@ leave_non_existent_player_test() ->
   {ok, Room} = kaboose:get_a_room(Server),
   {ActiveRoom, _} = kaboose:play(Room),
   kaboose:leave(ActiveRoom, self()).
+
+timesup_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"c?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"c?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"c?", ["a", "b", {correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:next(ActiveRoom),
+  ?assertEqual({ok,[0],#{},#{},false}, kaboose:timesup(ActiveRoom)).
