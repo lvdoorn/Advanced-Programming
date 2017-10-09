@@ -107,7 +107,7 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
 
       case IsNextValid of
         true -> From ! {self(), {ok, lists:nth(2, Questions)}},
-                activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, [], #{}, #{}); % TODO errors
+                activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), Total);
         false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total)
       end;
       
