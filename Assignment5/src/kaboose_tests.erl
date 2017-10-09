@@ -61,6 +61,20 @@ add_question_description_empty_test() ->
   {ok, Room} = kaboose:get_a_room(Server),
   ?assertEqual({error, not_a_non_empty_string}, kaboose:add_question(Room, {"", [{correct, "a"}, 1]})).
 
+next_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  kaboose:add_question(Room, {"b?", ["a", {correct, "b"}, "c"]}),
+  kaboose:add_question(Room, {"c?", ["a", "b", {correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  ?assertEqual({ok, {"a?", [{correct, "a"}, "b", "c"]}}, kaboose:next(ActiveRoom)),
+  kaboose:timesup(ActiveRoom),
+  ?assertEqual({ok, {"b?", ["a", {correct, "b"}, "c"]}}, kaboose:next(ActiveRoom)),
+  kaboose:timesup(ActiveRoom),
+  ?assertEqual({ok, {"c?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom)).
+
+
 join_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
@@ -74,11 +88,11 @@ leave_test() ->
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
   kaboose:leave(ActiveRoom, Ref).
 
-leave_non_existent_player_test() ->
-  {ok, Server} = kaboose:start(),
-  {ok, Room} = kaboose:get_a_room(Server),
-  {ActiveRoom, _} = kaboose:play(Room),
-  kaboose:leave(ActiveRoom, self()).
+% leave_non_existent_player_test() ->
+%   {ok, Server} = kaboose:start(),
+%   {ok, Room} = kaboose:get_a_room(Server),
+%   {ActiveRoom, _} = kaboose:play(Room),
+%   kaboose:leave(ActiveRoom, self()).
 
 timesup_test() ->
   {ok, Server} = kaboose:start(),
@@ -88,4 +102,24 @@ timesup_test() ->
   kaboose:add_question(Room, {"c?", ["a", "b", {correct, "c"}]}),
   {ActiveRoom, _} = kaboose:play(Room),
   kaboose:next(ActiveRoom),
-  ?assertEqual({ok,[0],#{},#{},false}, kaboose:timesup(ActiveRoom)).
+  ?assertEqual({ok,[0, 0, 0],#{},#{},false}, kaboose:timesup(ActiveRoom)).
+
+scenario1_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  kaboose:next(ActiveRoom), % set q1
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:timesup(ActiveRoom),
+  kaboose:next(ActiveRoom), % set q2
+  kaboose:guess(ActiveRoom, Ref, 2),
+  kaboose:timesup(ActiveRoom),
+  kaboose:next(ActiveRoom), % set q3
+  kaboose:guess(ActiveRoom, Ref, 3),
+  kaboose:timesup(ActiveRoom),
+  kaboose:leave(ActiveRoom, Ref),
+  kaboose:rejoin(ActiveRoom, Ref).

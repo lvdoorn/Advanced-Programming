@@ -12,11 +12,16 @@
        , guess/3
        , counters/1
        , defaultMap/1
+       , keyValueMap/3
        , activePlayers/1
        , validateNonEmptyString/1
        , validateAnswer/1
        , isNonEmptyString/1
        ]).
+% From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
+-ifndef(PRINT).
+-define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
+-endif.
 
 start() -> wrapInTry(fun() -> 
                         {ok, spawn(fun loop/0)}
@@ -36,6 +41,7 @@ timesup(ActiveRoom) -> request_reply(ActiveRoom, timesup).
 
 join(ActiveRoom, Nick) -> request_reply(ActiveRoom, {join, Nick}).
 
+% TODO use async where possible
 leave(ActiveRoom, Ref) -> request_reply(ActiveRoom, {leave, Ref}).
 
 rejoin(ActiveRoom, Ref) -> request_reply(ActiveRoom, {rejoin, Ref}).
@@ -81,7 +87,7 @@ roomLoop(Questions) ->
       roomLoop(Questions);
 
     {From, play} -> 
-      From ! {self(), {spawn(fun() -> activeRoomLoop([{"dummy", ["dummy"]}|Questions], #{}, From, false, [], #{}, #{}) end), From}},
+      From ! {self(), {spawn(fun() -> activeRoomLoop([{"dummy", ["dummy"]}|Questions], #{}, From, false, [], #{}, #{}, 0) end), From}},
       roomLoop(Questions)
   end.
  
@@ -92,20 +98,36 @@ roomLoop(Questions) ->
 % when timesup/1 is called, the current question is simply made inactive.
 
 % Players: Map(Ref -> {Nickname, Active[true/false]})
+% Dist: [Counter]
+% LastQ: Map(Ref -> Counter)
+% Total: Map(Ref -> Counter)
+% Time: Microseconds since the question was made active
 
-activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total) -> 
-  Questions = [{Description, Answers}|T],
-  _FirstQ = if
-    (Answers =:= ["dummy"]) -> true;
-    true -> false
+activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time) -> 
+  % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(Total))),
+  % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
+  ?PRINT(maps:keys(Total)),
+  ?PRINT(maps:keys(LastQ)),
+  Questions = [{Description, Answers}|T], % TODO this in function header, JS style
+  {NextDesc, NextAns} = if
+    length(T) =:= 0 -> {error, no_more_questions};
+    true -> lists:nth(2, Questions)
   end,
+  % FirstQ = if
+  %   (Answers =:= ["dummy"]) -> true;
+  %   true -> false
+  % end,
 
   receive
   % next, LastQ is reset here
     {From, next} -> 
+      NewTotal = if
+        % FirstQ -> defaultMap(maps:keys(Players));
+        true -> Total
+      end,
       if Active =:= true -> From ! {self(), {error, has_active_question}};
-         true -> From ! {self(), {ok, lists:nth(2, Questions)}},
-                 activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), Total) % TODO errors
+         true -> From ! {self(), {ok, {NextDesc, NextAns}}},
+                 activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, counters(length(NextAns)), defaultMap(maps:keys(Players)), NewTotal, erlang:system_time()) % TODO errors
       end;
   % timesup, LastQ is added to Total here
     {From, timesup} ->
@@ -113,16 +135,19 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
         T =:= [] -> true;
         true -> false
       end,
-      maps:map(fun(K, V) -> increment(maps:get(K, Total), V) end, LastQ),% TODO verify that this works
-      From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), LastQ, Total, Final}},
-      activeRoomLoop(Questions, Players, CRef, false, Dist, LastQ, Total);
+      ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
+
+      maps:map(fun(K, V) -> increment(maps:get(K, Total), getC(V)) end, LastQ),
+      
+      ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
+      From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), keyValueMap(LastQ, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), keyValueMap(Total, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), Final}}, % <-- map LastQ to getC and getName, change keyvaluemap so it takes two functions
+      activeRoomLoop(Questions, Players, CRef, false, Dist, LastQ, Total, Time);
 
   % join
     {From, {join, Nick}} ->
       From ! {self(), {ok, From}},
       CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
-      activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, Total);
-      % TODO: send message to conductor
+      activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time);
       % TODO: error if Nick is taken
 
   %leave
@@ -131,27 +156,32 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
       CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
-      activeRoomLoop(Questions, maps:put(From, {Name, false}), CRef, Active, Dist, LastQ, Total);
+      activeRoomLoop(Questions, maps:put(From, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time);
   
   % rejoin
     {From, {rejoin, Ref}} ->
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
       CRef ! {CRef, {player_joined, Name, activePlayers(Players) + 1}},
-      activeRoomLoop(Questions, maps:put(Ref, {Name, true}), CRef, Active, Dist, LastQ, Total);
+      activeRoomLoop(Questions, maps:put(Ref, {Name, true}, Players), CRef, Active, Dist, LastQ, Total, Time);
 
-  % guess
+  % guess, score is added to LastQ here
     {From, {guess, Ref, Index}} ->
+      Timesup = (erlang:system_time() - Time < 500000000),
+      Score = if
+        Timesup -> 1000;
+        true -> 1000
+      end,
       From ! {self(), ok},
       % TODO check index and if question is active
-      {_Name, _} = maps:get(Ref, Players), % TODO create function for this
-      % TODO incorporate time bonus
+      % {Name, _} = maps:get(Ref, Players), % TODO replace with getName
+      
       increment(lists:nth(Index, Dist)),
-      % Score = 500, % TODO ^
-      % case lists:nth(Index, Answers) of
-      %   {correct, _} -> 
-
-      activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total)
+      case lists:nth(Index, Answers) of
+        {correct, _} -> increment(maps:get(Ref, LastQ), Score);
+        true -> doNothing
+      end,
+      activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
 
   end.
 
@@ -159,6 +189,7 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
 counters(0) -> [];
 counters(Length) -> [startC()|counters(Length - 1)].
 
+% Every element in the input list will map to a counter at zero.
 defaultMap([]) -> #{};
 defaultMap([H|T]) -> maps:put(H, startC(), defaultMap(T)).
 
@@ -168,6 +199,20 @@ matchV(V) -> case V of
   {_, true} -> true;
   (_) -> false
 end.
+
+getName(Ref, Players) ->
+  {Name, _} = maps:get(Ref, Players),
+  Name.
+
+% For each (K, V) in Map inserts (Fun1(K), Fun2(V)) into the resulting map.
+keyValueMap(Map, Fun1, Fun2) -> 
+  List = maps:to_list(Map),
+  Mapped = lists:map(fun({A, B}) -> {Fun1(A), Fun2(B)} end, List),
+  maps:from_list(Mapped).
+
+% Adds two maps
+% addMaps(Map1, Map2) ->
+%   Keys = maps:keys(Map1)
 
 
 startC() -> spawn(fun () -> loop(0) end).
