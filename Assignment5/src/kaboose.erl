@@ -16,6 +16,7 @@
        , validateNonEmptyString/1
        , validateAnswer/1
        , isNonEmptyString/1
+       , isConductor/3
        ]).
 
 start() -> wrapInTry(fun() -> 
@@ -113,14 +114,20 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
       
   % timesup
     {From, timesup} ->
-      Final = if
-        T =:= [] -> true;
-        true -> false
-      end,
-      maps:map(fun(K, V) -> increment(maps:get(K, Total), V) end, LastQ),% TODO verify that this works
-      From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), LastQ, Total, Final}},
-      activeRoomLoop(Questions, Players, CRef, false, Dist, LastQ, Total);
+      IsTimesupValid = validateTimesup(From, CRef, Active),
 
+      case IsTimesupValid of 
+        false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total);
+        true -> 
+            Final = if
+              T =:= [] -> true;
+              true -> false
+            end,
+            maps:map(fun(K, V) -> increment(maps:get(K, Total), V) end, LastQ),% TODO verify that this works
+            From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), LastQ, Total, Final}},
+            activeRoomLoop(Questions, Players, CRef, false, Dist, LastQ, Total)
+      end;    
+         
   % join
     {From, {join, Nick}} ->
       From ! {self(), {ok, From}},
@@ -239,11 +246,22 @@ validateQuestion(Question, From) ->
                    end,
 IsDescValid =:= ok andalso IsAnswerValid =:= ok.
 
+isConductor(From, CRef, Msg) ->case From =:= CRef of
+                            true -> true;
+                            false -> request_reply_async(From, errorTuple(Msg)), false
+                          end.
+
+validateTimesup(From, CRef, Active) ->
+  IsConductor = isConductor(From, CRef, nice_try),
+
+  HasActiveQuestion = case Active of 
+                          true -> true;
+                          false -> request_reply_async(From, errorTuple(no_question_asked)), false
+                      end,
+  IsConductor andalso HasActiveQuestion.
+
 validateNextQuestion(From, CRef, Active) ->
-  IsConductor = case From =:= CRef of
-                      true -> true;
-                      false -> request_reply_async(From, errorTuple(who_are_you)), false
-                    end,
+  IsConductor = isConductor(From, CRef, who_are_you),
   HasNoActiveQuestion = case Active of 
                           true -> request_reply_async(From, errorTuple(has_active_question)), false;
                           false -> true
