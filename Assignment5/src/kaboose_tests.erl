@@ -143,3 +143,25 @@ scenario1_test() ->
   kaboose:leave(ActiveRoom, Ref),
   kaboose:rejoin(ActiveRoom, Ref),
   kaboose:timesup(ActiveRoom).
+
+multiple_active_rooms_based_on_same_room_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
+  {ActiveRoom1, _} = kaboose:play(Room),
+  {ActiveRoom2, _} = kaboose:play(Room),
+  ?assertEqual({ok, {"q1?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom1)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom1)),
+  ?assertEqual({ok, {"q2?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom1)),
+  ?assertEqual({ok, {"q1?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom1)),
+  ?assertEqual({ok, {"q3?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom1)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, true}, kaboose:timesup(ActiveRoom1)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom2)),
+  ?assertEqual({ok, {"q2?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom2)),
+  ?assertEqual({ok, {"q3?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, true}, kaboose:timesup(ActiveRoom2)).
+
