@@ -88,7 +88,7 @@ roomLoop(Questions) ->
       roomLoop(Questions);
 
     {From, play} -> 
-      From ! {self(), {spawn(fun() -> activeRoomLoop([{"dummy", ["dummy"]}|Questions], #{}, From, false, [], #{}, #{}, 0) end), From}},
+      From ! {self(), {spawn(fun() -> activeRoomLoop(Questions, #{}, From, false, [], #{}, #{}, 0) end), From}},
       roomLoop(Questions)
   end.
  
@@ -103,17 +103,16 @@ roomLoop(Questions) ->
 % LastQ: Map(Ref -> Counter)
 % Total: Map(Ref -> Counter)
 % Time: Microseconds since the question was made active
+% activeRoomLoop([], _, _, _, _, _, _, _) -> end_process.
 
 activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time) -> 
   % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(Total))),
   % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
-  ?PRINT(maps:keys(Total)),
-  ?PRINT(maps:keys(LastQ)),
   Questions = [{Description, Answers}|T], % TODO this in function header, JS style
-  {NextDesc, NextAns} = if
-    length(T) =:= 0 -> {error, no_more_questions};
-    true -> lists:nth(2, Questions)
-  end,
+  % {NextDesc, NextAns} = if
+  %   length(T) =:= 0 -> {error, no_more_questions};
+  %   true -> lists:nth(2, Questions)
+  % end,
   % FirstQ = if
   %   (Answers =:= ["dummy"]) -> true;
   %   true -> false
@@ -128,8 +127,8 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
         true -> Total
       end,
       case IsNextValid of
-        true -> From ! {self(), {ok, {NextDesc, NextAns}}},
-                activeRoomLoop(lists:nthtail(1, Questions), Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), NewTotal, erlang:system_time());
+        true -> From ! {self(), {ok, {Description, Answers}}},
+                activeRoomLoop(Questions, Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), NewTotal, erlang:system_time());
         false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
       end;
 
@@ -145,7 +144,10 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
           end,
           maps:map(fun(K, V) -> increment(maps:get(K, Total), getC(V)) end, LastQ),
           From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), keyValueMap(LastQ, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), keyValueMap(Total, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), Final}},
-          activeRoomLoop(Questions, Players, CRef, false, Dist, LastQ, Total, Time)
+          if
+            Final =:= true -> end_process;
+            true -> activeRoomLoop(T, Players, CRef, false, Dist, LastQ, Total, Time)
+          end
       end;
       
 
@@ -185,7 +187,7 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
       increment(lists:nth(Index, Dist)),
       case lists:nth(Index, Answers) of
         {correct, _} -> increment(maps:get(Ref, LastQ), Score);
-        true -> doNothing
+        _ -> doNothing
       end,
       activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
 

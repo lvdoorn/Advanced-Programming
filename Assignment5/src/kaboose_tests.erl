@@ -96,12 +96,14 @@ timesup_no_question_asked_test() ->
 join_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, _} = kaboose:join(ActiveRoom, "Nickname").
 
 leave_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
   kaboose:leave(ActiveRoom, Ref).
@@ -130,7 +132,7 @@ scenario1_test() ->
   kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
-  kaboose:next(ActiveRoom), % set q1
+  kaboose:next(ActiveRoom), % set q1  
   kaboose:guess(ActiveRoom, Ref, 1),
   kaboose:timesup(ActiveRoom),
   kaboose:next(ActiveRoom), % set q2
@@ -138,6 +140,6 @@ scenario1_test() ->
   kaboose:timesup(ActiveRoom),
   kaboose:next(ActiveRoom), % set q3
   kaboose:guess(ActiveRoom, Ref, 3),
-  kaboose:timesup(ActiveRoom),
   kaboose:leave(ActiveRoom, Ref),
-  kaboose:rejoin(ActiveRoom, Ref).
+  kaboose:rejoin(ActiveRoom, Ref),
+  kaboose:timesup(ActiveRoom).
