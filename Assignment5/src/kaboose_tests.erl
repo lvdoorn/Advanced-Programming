@@ -199,3 +199,17 @@ send_multiple_guesses_to_a_question_test() ->
   kaboose:guess(ActiveRoom, Ref, 1),
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
+
+guess_index_out_of_range_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  kaboose:guess(ActiveRoom, Ref, 5),
+  kaboose:guess(ActiveRoom, Ref, 0),
+  kaboose:guess(ActiveRoom, Ref, -100000),
+  kaboose:guess(ActiveRoom, Ref, 123456789),
+  ?assertEqual({ok, [0, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
