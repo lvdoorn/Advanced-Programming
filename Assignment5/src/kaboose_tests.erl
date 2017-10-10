@@ -46,7 +46,10 @@ invalid_answer_correct_type_test() ->
   ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", "s", {incorrect, "c"}])).
 
 isConductor_test() ->
-  ?assertEqual(true, kaboose:isConductor(self(), self(), who_are_you)).
+  ?assertEqual(true, kaboose:isConductor(self(), self(), test)).
+
+isConductor_false_test() ->
+  ?assertEqual(false, kaboose:isConductor(self(), genPidDiffToSelf(self()), test)).
 
 add_question_no_correct_answer_test() ->
   {ok, Server} = kaboose:start(),
@@ -100,6 +103,14 @@ join_test() ->
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, _} = kaboose:join(ActiveRoom, "Nickname").
 
+join_same_nickname_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:join(ActiveRoom, "Nickname"),
+  ?assertEqual({error,"Nickname", is_taken}, kaboose:join(ActiveRoom, "Nickname")).
+  
 leave_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
@@ -143,3 +154,10 @@ scenario1_test() ->
   kaboose:leave(ActiveRoom, Ref),
   kaboose:rejoin(ActiveRoom, Ref),
   kaboose:timesup(ActiveRoom).
+
+genPidDiffToSelf(Pid) -> NewPid = list_to_pid("<0.75.0>"),
+                         NewPid1 = list_to_pid("<0.76.0>"),
+                           case Pid =:= NewPid of
+                             true -> NewPid1;
+                             false -> NewPid
+                           end.

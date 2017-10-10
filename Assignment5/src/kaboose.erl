@@ -152,11 +152,19 @@ activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, T
       
 
   % join
-    {From, {join, Nick}} ->
-      From ! {self(), {ok, From}},
-      CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
-      activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time);
-      % TODO: error if Nick is taken
+     {From, {join, Nick}} ->
+     
+     GetNickFromPlayers = maps:filter(fun(_,{Nickname, _}) -> Nickname =:= Nick end, Players),
+     IsNickAvailable = GetNickFromPlayers =:= #{},
+
+      case IsNickAvailable of
+        true -> 
+          From ! {self(), {ok, From}},
+          CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
+          activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time);
+        false -> request_reply_async(From, {error, Nick, is_taken}), 
+                 activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
+      end;
 
   %leave
     {From, {leave, Ref}} ->
