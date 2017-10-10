@@ -94,7 +94,7 @@ roomLoop(Questions) ->
       roomLoop(Questions);
 
     {From, play} -> 
-      From ! {self(), {spawn(fun() -> activeRoomLoop(Questions, #{}, From, false, [], #{}, #{}, 0) end), From}},
+      From ! {self(), {spawn(fun() -> activeRoomLoop(Questions, #{}, From, false, [], #{}, #{}, 0, []) end), From}},
       roomLoop(Questions)
   end.
  
@@ -109,9 +109,11 @@ roomLoop(Questions) ->
 % LastQ: Map(Ref -> Counter)
 % Total: Map(Ref -> Counter)
 % Time: Microseconds since the question was made active
+% HaveGuessed: [Ref]
+
 % activeRoomLoop([], _, _, _, _, _, _, _) -> end_process.
 
-activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time) -> 
+activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed) -> 
   % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(Total))),
   % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
   % Questions = [{Description, Answers}|T], % TODO this in function header, JS style
@@ -127,22 +129,22 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
   receive
   % next, LastQ is reset here
     {From, next} -> 
-      IsNextValid = true, %validateNextQuestion(From, CRef, Active),
+      IsNextValid = validateNextQuestion(From, CRef, Active),
       NewTotal = if
         % FirstQ -> defaultMap(maps:keys(Players));
         true -> Total
       end,
       case IsNextValid of
         true -> From ! {self(), {ok, {Description, Answers}}},
-                activeRoomLoop(Questions, Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), NewTotal, erlang:system_time());
-        false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
+                activeRoomLoop(Questions, Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), NewTotal, erlang:system_time(), []);
+        false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
       end;
 
   % timesup
     {From, timesup} ->
       IsTimesupValid = validateTimesup(From, CRef, Active),
       case IsTimesupValid of 
-        false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time);
+        false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
         true -> 
           Final = if
             T =:= [] -> true;
@@ -152,53 +154,70 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
           From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), keyValueMap(LastQ, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), keyValueMap(Total, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), Final}},
           if
             Final =:= true -> end_process;
-            true -> activeRoomLoop(T, Players, CRef, false, Dist, LastQ, Total, Time)
+            true -> activeRoomLoop(T, Players, CRef, false, Dist, LastQ, Total, Time, HaveGuessed)
           end
       end;
       
 
   % join
-    {From, {join, Nick}} ->
-      From ! {self(), {ok, From}},
-      CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
-      activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time);
-      % TODO: error if Nick is taken
+     {From, {join, Nick}} ->
+     
+     GetNickFromPlayers = maps:filter(fun(_,{Nickname, _}) -> Nickname =:= Nick end, Players),
+     IsNickAvailable = GetNickFromPlayers =:= #{},
+
+      case IsNickAvailable of
+        true -> 
+          From ! {self(), {ok, From}},
+          CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
+          activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time, HaveGuessed);
+        false -> request_reply_async(From, {error, Nick, is_taken}), 
+                 activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
+      end;
 
   %leave
     {From, {leave, Ref}} ->
-      % TODO: check if player actually exists.
+      % TODO no validation - not required. State in report.
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
       CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
       ?PRINT({CRef, {player_left, Name, activePlayers(Players) - 1}}),
-      activeRoomLoop(Questions, maps:put(From, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time);
+      activeRoomLoop(Questions, maps:put(From, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
   
   % rejoin
+  % TODO no validation - not required. State in report.
     {From, {rejoin, Ref}} ->
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
       CRef ! {CRef, {player_joined, Name, activePlayers(Players) + 1}},
-      activeRoomLoop(Questions, maps:put(Ref, {Name, true}, Players), CRef, Active, Dist, LastQ, Total, Time);
+      activeRoomLoop(Questions, maps:put(Ref, {Name, true}, Players), CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
 
   % guess, score is added to LastQ here
     {From, {guess, Ref, Index}} ->
-      Timesup = (erlang:system_time() - Time < 500000000),
-      Score = if
-        Timesup -> 1000;
-        true -> 1000
-      end,
       From ! {self(), ok},
-      % TODO check index and if question is active
+      % if
+      %   (not Active) or (Index < 1) or (Index > length(Answers)) ->
+      %     activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time);
+      %   true ->
+          Timesup = (erlang:system_time() - Time < 500000000),
+          Score = if
+            Timesup -> 1000;
+            true -> 1000
+          end,
       % {Name, _} = maps:get(Ref, Players), % TODO replace with getName
-      
-      increment(lists:nth(Index, Dist)),
-      case lists:nth(Index, Answers) of
-        {correct, _} -> increment(maps:get(Ref, LastQ), Score);
-        _ -> doNothing
-      end,
-      activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
 
-  end.
+          case isGuessValid(Answers, Index, Active, From, HaveGuessed) of
+            true -> 
+              NewHaveGuessed = [From|HaveGuessed],
+              increment(lists:nth(Index, Dist)),
+              case lists:nth(Index, Answers) of
+                {correct, _} -> increment(maps:get(Ref, LastQ), Score);
+                _ -> doNothing
+              end;
+            false -> NewHaveGuessed = HaveGuessed
+          end,
+          activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, NewHaveGuessed)
+      % end
+    end.
 
 % Returns a list of length Length filled with counters.
 counters(0) -> [];
@@ -260,6 +279,12 @@ loop(State) ->
     From ! {self(), State},
     loop(State)
   end.
+
+isGuessValid(Answers, Index, Active, From, HaveGuessed) ->
+    IsQuestionActive = Active =:= true,
+    IsIndexInRange = Index >= 1 andalso Index =< length(Answers),
+    GuessedBefore = lists:member(From, HaveGuessed),
+    IsQuestionActive andalso IsIndexInRange andalso not(GuessedBefore).
 
 wrapInTry(F) -> try F()
                 catch

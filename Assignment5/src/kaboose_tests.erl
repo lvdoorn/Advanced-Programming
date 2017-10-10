@@ -15,19 +15,10 @@
 -endif.
 -define(DEBUG, 1).
 
-
-
-request_reply(Pid, Request) ->
-  Pid ! {self(), Request},
-  receive
-    {Pid, Response} -> Response
-  end.
-
 player(Parent) ->
   receive
     {next, ActiveRoom} -> Parent ! kaboose:next(ActiveRoom)
   end.
-
 
 demo_test() -> 
   {ok, Server} = kaboose:start(),
@@ -70,7 +61,13 @@ invalid_answer_correct_type_test() ->
   ?assertEqual(answer_format_is_invalid, kaboose:validateAnswer(["a", "s", {incorrect, "c"}])).
 
 isConductor_test() ->
-  ?assertEqual(true, kaboose:isConductor(self(), self(), who_are_you)).
+  ?assertEqual(true, kaboose:isConductor(self(), self(), test)).
+
+isConductor_false_test() ->
+  ?assertEqual(false, kaboose:isConductor(self(), genPidDiffToSelf(self()), test)),
+  receive
+    Msg -> ?assertEqual(Msg, {self(), {error, test}})
+  end.
 
 add_question_no_correct_answer_test() ->
   {ok, Server} = kaboose:start(),
@@ -152,7 +149,16 @@ timesup_no_question_asked_test() ->
   {ActiveRoom, _} = kaboose:play(Room),
   ?assertEqual({error, no_question_asked}, kaboose:timesup(ActiveRoom)).
 
+join_same_nickname_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:join(ActiveRoom, "Nickname"),
+  ?assertEqual({error,"Nickname", is_taken}, kaboose:join(ActiveRoom, "Nickname")).
+  
 join_test() ->
+  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
@@ -202,6 +208,7 @@ timesup_test() ->
 
 
 scenario1_test() ->
+  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
@@ -239,6 +246,7 @@ nick_is_taken_test() ->
   % receive
   %   Msg -> ?assertEqual({error, who_are_you}, Msg)
   % end,
+  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   ok = kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
@@ -347,8 +355,24 @@ guess_no_active_question_test() ->
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
 
-spawn_test_() -> {spawn, [ join_test()
-                         % , leave_test()
-                         , scenario1_test()
-                         , nick_is_taken_test()
-                         ]}.
+% spawn_test_() -> {spawn, [ %join_test()
+%                          % , leave_test()
+%                            scenario1_test()
+%                          , nick_is_taken_test()
+%                          ]}.
+
+genPidDiffToSelf(Pid) -> NewPid = list_to_pid("<0.75.0>"),
+                         NewPid1 = list_to_pid("<0.76.0>"),
+                           case Pid =:= NewPid of
+                             true -> NewPid1;
+                             false -> NewPid
+                           end.
+
+% From: http://erlang.org/pipermail/erlang-questions/2008-January/032527.html 
+clear_mailbox() ->
+    receive
+        _Any ->
+            clear_mailbox()
+    after 0 ->
+        ok
+    end.
