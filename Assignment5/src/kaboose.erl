@@ -105,10 +105,10 @@ roomLoop(Questions) ->
 % Time: Microseconds since the question was made active
 % activeRoomLoop([], _, _, _, _, _, _, _) -> end_process.
 
-activeRoomLoop([{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time) -> 
+activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time) -> 
   % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(Total))),
   % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
-  Questions = [{Description, Answers}|T], % TODO this in function header, JS style
+  % Questions = [{Description, Answers}|T], % TODO this in function header, JS style
   % {NextDesc, NextAns} = if
   %   length(T) =:= 0 -> {error, no_more_questions};
   %   true -> lists:nth(2, Questions)

@@ -5,6 +5,10 @@
 % $ c(kaboose_tests).
 % $ eunit:test(kaboose).
 
+% TODO tests to write:
+% Player joins a room while a question is active and guesses
+% Player leaves a room while a question is active
+
 demo_test() -> 
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
@@ -64,7 +68,7 @@ add_question_wrong_type_answer_test() ->
 add_question_description_empty_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
-  ?assertEqual({error, not_a_non_empty_string}, kaboose:add_question(Room, {"", [{correct, "a"}, 1]})).
+  ?assertEqual({error, not_a_non_empty_string}, kaboose:add_question(Room, {"", [{correct, "a"}]})).
 
 next_test() ->
   {ok, Server} = kaboose:start(),
@@ -141,7 +145,8 @@ scenario1_test() ->
   kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
   kaboose:add_question(Room, {"q2?", ["a", "b", {correct, "c"}]}),
   kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
-  {ActiveRoom, _} = kaboose:play(Room),
+  Me = self(),
+  {ActiveRoom, Me} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
   kaboose:next(ActiveRoom), % set q1  
   kaboose:guess(ActiveRoom, Ref, 1),
@@ -154,6 +159,117 @@ scenario1_test() ->
   kaboose:leave(ActiveRoom, Ref),
   kaboose:rejoin(ActiveRoom, Ref),
   kaboose:timesup(ActiveRoom).
+
+nick_is_taken_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  ok = kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  Me = self(),
+  {ActiveRoom, Me} = kaboose:play(Room),
+  {ok, _} = kaboose:join(ActiveRoom, "Nickname"),
+  receive
+    Msg -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, Msg)
+  end,
+  {error, "Nickname", is_taken} = kaboose:join(ActiveRoom, "Nickname").
+
+
+
+multiple_active_rooms_based_on_same_room_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", ["a", "b", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
+  {ActiveRoom1, _} = kaboose:play(Room),
+  {ActiveRoom2, _} = kaboose:play(Room),
+  ?assertEqual({ok, {"q1?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom1)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom1)),
+  ?assertEqual({ok, {"q2?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom1)),
+  ?assertEqual({ok, {"q1?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom1)),
+  ?assertEqual({ok, {"q3?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom1)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, true}, kaboose:timesup(ActiveRoom1)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom2)),
+  ?assertEqual({ok, {"q2?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom2)),
+  ?assertEqual({ok, {"q3?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
+  ?assertEqual({ok, [0, 0, 0], #{}, #{}, true}, kaboose:timesup(ActiveRoom2)).
+
+add_questions_to_active_room_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  ?assertEqual({ok, [0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom)),
+  ?assertEqual({ok, {"q2?", [{correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  ?assertEqual({ok, [0], #{}, #{}, true}, kaboose:timesup(ActiveRoom)).
+
+leave_and_rejoin_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  Me = self(),
+  {ActiveRoom, Me} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  receive
+    {Me, {player_joined, "Nickname", 1}} -> true
+  end,
+  kaboose:leave(ActiveRoom, Ref),
+  receive
+    {Me, {player_left, "Nickname", 0}} -> true
+  end,
+  kaboose:rejoin(ActiveRoom, Ref),
+  receive
+    {Me, {player_joined, "Nickname", 1}} -> true
+  end.
+
+send_multiple_guesses_to_a_question_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
+
+guess_index_out_of_range_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  kaboose:guess(ActiveRoom, Ref, 5),
+  kaboose:guess(ActiveRoom, Ref, 0),
+  kaboose:guess(ActiveRoom, Ref, -100000),
+  kaboose:guess(ActiveRoom, Ref, 123456789),
+  ?assertEqual({ok, [0, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
+
+guess_no_active_question_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
 
 genPidDiffToSelf(Pid) -> NewPid = list_to_pid("<0.75.0>"),
                          NewPid1 = list_to_pid("<0.76.0>"),
