@@ -165,3 +165,14 @@ multiple_active_rooms_based_on_same_room_test() ->
   ?assertEqual({ok, {"q3?", ["a", "b", {correct, "c"}]}}, kaboose:next(ActiveRoom2)),
   ?assertEqual({ok, [0, 0, 0], #{}, #{}, true}, kaboose:timesup(ActiveRoom2)).
 
+add_questions_to_active_room_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  ?assertEqual({ok, [0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom)),
+  ?assertEqual({ok, {"q2?", [{correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  ?assertEqual({ok, [0], #{}, #{}, true}, kaboose:timesup(ActiveRoom)).
