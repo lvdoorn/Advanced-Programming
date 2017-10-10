@@ -134,7 +134,8 @@ scenario1_test() ->
   kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
   kaboose:add_question(Room, {"q2?", ["a", "b", {correct, "c"}]}),
   kaboose:add_question(Room, {"q3?", ["a", "b", {correct, "c"}]}),
-  {ActiveRoom, _} = kaboose:play(Room),
+  Me = self(),
+  {ActiveRoom, Me} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
   kaboose:next(ActiveRoom), % set q1  
   kaboose:guess(ActiveRoom, Ref, 1),
@@ -181,6 +182,24 @@ add_questions_to_active_room_test() ->
   ?assertEqual({ok, {"q2?", [{correct, "c"}]}}, kaboose:next(ActiveRoom)),
   ?assertEqual({ok, [0], #{}, #{}, true}, kaboose:timesup(ActiveRoom)).
 
+leave_and_rejoin_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  Me = self(),
+  {ActiveRoom, Me} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  receive
+    {ActiveRoom, {Me, {player_joined, "Nickname", 1}}} -> true
+  end,
+  kaboose:leave(ActiveRoom, Ref),
+  receive
+    {ActiveRoom, {Me, {player_left, "Nickname", 0}}} -> true
+  end,
+  kaboose:rejoin(ActiveRoom, Ref),
+  receive
+    {ActiveRoom, {Me, {player_joined, "Nickname", 1}}} -> true
+  end.
+
 send_multiple_guesses_to_a_question_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
@@ -225,3 +244,4 @@ guess_no_active_question_test() ->
   ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
+
