@@ -5,6 +5,10 @@
 % $ c(kaboose_tests).
 % $ eunit:test(kaboose).
 
+% TODO tests to write:
+% Player joins a room while a question is active and guesses
+% Player leaves a room while a question is active
+
 demo_test() -> 
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
@@ -176,3 +180,22 @@ add_questions_to_active_room_test() ->
   ?assertEqual({ok, [0, 0], #{}, #{}, false}, kaboose:timesup(ActiveRoom)),
   ?assertEqual({ok, {"q2?", [{correct, "c"}]}}, kaboose:next(ActiveRoom)),
   ?assertEqual({ok, [0], #{}, #{}, true}, kaboose:timesup(ActiveRoom)).
+
+send_multiple_guesses_to_a_question_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  kaboose:guess(ActiveRoom, Ref, 1),
+  ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
