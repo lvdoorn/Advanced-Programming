@@ -168,13 +168,14 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
 
   %leave
     {From, {leave, Ref}} ->
-      % TODO: check if player actually exists.
+      % TODO no validation - not required. State in report.
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
       CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
       activeRoomLoop(Questions, maps:put(From, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time);
   
   % rejoin
+  % TODO no validation - not required. State in report.
     {From, {rejoin, Ref}} ->
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
@@ -189,13 +190,16 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
         true -> 1000
       end,
       From ! {self(), ok},
-      % TODO check index and if question is active
       % {Name, _} = maps:get(Ref, Players), % TODO replace with getName
-      
-      increment(lists:nth(Index, Dist)),
-      case lists:nth(Index, Answers) of
-        {correct, _} -> increment(maps:get(Ref, LastQ), Score);
-        _ -> doNothing
+
+      case isGuessValid(Answers, Index, Active) of
+        true -> 
+          increment(lists:nth(Index, Dist)),
+          case lists:nth(Index, Answers) of
+            {correct, _} -> increment(maps:get(Ref, LastQ), Score);
+            _ -> doNothing
+          end;
+        false -> doNothing
       end,
       activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time)
 
@@ -261,6 +265,11 @@ loop(State) ->
     From ! {self(), State},
     loop(State)
   end.
+
+isGuessValid(Answers, Index, Active) ->
+    IsQuestionActive = Active =:= true,
+    IsIndexInRange = Index >= 1 andalso Index =< length(Answers),
+    IsQuestionActive andalso IsIndexInRange.
 
 wrapInTry(F) -> try F()
                 catch

@@ -53,7 +53,10 @@ isConductor_test() ->
   ?assertEqual(true, kaboose:isConductor(self(), self(), test)).
 
 isConductor_false_test() ->
-  ?assertEqual(false, kaboose:isConductor(self(), genPidDiffToSelf(self()), test)).
+  ?assertEqual(false, kaboose:isConductor(self(), genPidDiffToSelf(self()), test)),
+  receive
+    Msg -> ?assertEqual(Msg, {self(), {error, test}})
+  end.
 
 add_question_no_correct_answer_test() ->
   {ok, Server} = kaboose:start(),
