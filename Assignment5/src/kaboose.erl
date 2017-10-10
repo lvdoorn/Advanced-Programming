@@ -18,11 +18,17 @@
        , validateAnswer/1
        , isNonEmptyString/1
        , isConductor/3
+       , player/1
        ]).
 % From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
 -ifndef(PRINT).
 -define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
 -endif.
+
+player(Parent) ->
+  receive
+    {next, ActiveRoom} -> Parent ! kaboose:next(ActiveRoom)
+  end.
 
 start() -> wrapInTry(fun() -> 
                         {ok, spawn(fun loop/0)}
@@ -121,7 +127,7 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
   receive
   % next, LastQ is reset here
     {From, next} -> 
-      IsNextValid = validateNextQuestion(From, CRef, Active),
+      IsNextValid = true, %validateNextQuestion(From, CRef, Active),
       NewTotal = if
         % FirstQ -> defaultMap(maps:keys(Players));
         true -> Total
@@ -164,6 +170,7 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
       From ! {self() , ok},
       {Name, _} = maps:get(Ref, Players),
       CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
+      ?PRINT({CRef, {player_left, Name, activePlayers(Players) - 1}}),
       activeRoomLoop(Questions, maps:put(From, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time);
   
   % rejoin
