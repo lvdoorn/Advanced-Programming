@@ -8,7 +8,13 @@
 \maketitle	
 
 \section{How to Run the Code}
-To run the code, in the \texttt{src} folder we start erlang shell by running \texttt{erl} command. From here, we can run code by specifying \texttt{module:function} and pass parameters if any, functions being situated under \texttt{kaboose.erl} (kaboose module) or \texttt{kaboose\_tests.erl} (kaboose\_tests module) files.
+To run the code, first we need to compile it. In the \texttt{src} folder we start erlang shell by running \texttt{erl} command, and then we compile following the files:
+\begin{itemize}
+	\item \texttt{c(kaboose).}
+	\item \texttt{c(counter).}
+	\item \texttt{c(kaboose\_tests).}
+\end{itemize} 
+Now we are ready to run the code. Once in erlang shell, we run code by specifying \texttt{module:function} and pass parameters if any, functions being situated under \texttt{kaboose.erl} (kaboose module), \texttt{kaboose\_tests.erl} (kaboose\_tests module), \texttt{counter.erl} (counter module) files.
 
 To run tests, in the erlang shell we simply run \texttt{eunit:test(kaboose).} command.
 
