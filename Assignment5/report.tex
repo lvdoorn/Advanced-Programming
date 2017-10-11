@@ -1,8 +1,23 @@
 \documentclass{article}
 
+\title{Advanced Programming Assignment 1 Report}
+\author{Mihai Popovici \texttt{MTF422} \and Leendert van Doorn \texttt{XBT504}}
+
 \begin{document}
+
+\maketitle	
+
 \section{Main Design}
-	
+We have chosen to use different processes for each server, room and active room. When \texttt{kaboose:start()} is called, we call the function \texttt{loop/0}, which waits for the message \texttt{\{From, new\_room\}}, and will return the \texttt{Pid} of a new room when it receives this message.
+
+Rooms are implemented in the \texttt{roomLoop/1} function. This function takes a list of questions as its parameter. This list is initially empty. The \texttt{roomLoop/1} function waits to receive one of three types of messages: \texttt{\{From, \{add\_question, Question\}\}}, \texttt{\{From, get\_questions\}} or \texttt{\{From, play\}}. When one of these messages is received, \texttt{roomLoop/1} will add a question to the list of questions, return the list of questions, or spawn an active room process respectively.
+
+Active rooms are also implemented as separate processes. The state for each active room is kept in the parameters of the \texttt{activeRoomLoop/9} function. These parameters are: \texttt{Questions} = the list of questions, \texttt{Players} = map from \texttt{Ref} to \texttt{\{Nickname, true/false (active or not)\}}, \texttt{CRef} = conductor's ref, \texttt{Active} = boolean indicating if the current question is active, \texttt{Dist} = list of counters, one for each answer, \texttt{LastQ} = map from \texttt{Ref} to counter, \texttt{Total} = map from \texttt{Ref} to counter, \texttt{Time} = time in nanoseconds since question was last made active, and \texttt{HaveGuessed} = a list of all refs that have guessed.
+
+To keep the score, we have copied and adapted the \texttt{counter} module shown during the lectures. For every answer we spawn a counter process, as well as for the scores of the current question and the total scores.
+
+When messages are sent to an active room's process, the message is processed using the state parameters, and the appropriate parameters are given to the recursive \texttt{activeRoomLoop/9} call. The exact design choices are described below.
+
 \section{Design Choices}
 Score of inactive players is still displayed.
 No validation if rejoining/leaving players actually exist
