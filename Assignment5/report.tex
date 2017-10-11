@@ -19,9 +19,22 @@ To keep the score, we have copied and adapted the \texttt{counter} module shown 
 When messages are sent to an active room's process, the message is processed using the state parameters, and the appropriate parameters are given to the recursive \texttt{activeRoomLoop/9} call. The exact design choices are described below.
 
 \section{Design Choices}
-Score of inactive players is still displayed.
-No validation if rejoining/leaving players actually exist
-	
-	
+In this section we describe the edge cases that can occur when playing Kaboose!, and we describe the ways in which our implementation handles them.
+
+\subsection{Guess Sent Without An Active Question}
+Whenever a \texttt{\{From, \{guess, Ref, Index\}\}} message is sent to \texttt{activeRoomLoop/9}, the time between the moment the question was made active and the time when the guess was made is calculated to compute the score. Then, the validity of the guess is checked in \texttt{isGuessValid/5}, which uses information on the answer list, the index, if the question is active, who guessed and the list of those who have already guessed to decide whether to process or whether to ignore the guess. In case the guess is sent while the current question is inactive, the guess is ignored because the \texttt{Active} state parameter is \texttt{false}.
+
+\subsection{Scores of Players Who Have Left}
+It may happen that players of the game leave while the game has not yet finished. If this happens, we do keep displaying their scores, because they may join again at some later time.
+
+\subsection{Nonexistent Players Leaving or Rejoining}
+We do not validate whether \texttt{Ref}s that send \texttt{leave} or \texttt{rejoin} messages actually exist. This means that our program will crash if players who have never joined a game leave or rejoin it.
+
+\subsection{Rooms Without Questions}
+It is not possible in our implementation to \texttt{play/1} in a room without questions. In this case, are program will return a  \texttt{function\_clause} error, since the questions parameter of \texttt{activeRoomLoop/9} is given as \texttt{Questions = [{Description, Answers}|T]}, meaning that an empty list will not be matched.
+
+\subsection{Unexpected Errors}
+Our implementation only returns errors that were specified in the assignment text. When processes terminate in an unexpected manner, in general we do not respawn them, but the program will crash.
+
 \section{Assessment of Implementation}
 \end{document}
