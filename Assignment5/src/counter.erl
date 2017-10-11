@@ -4,6 +4,13 @@
 
 %%%% make a server that can keep track of a counter
 
+%%% Internal implementation
+request_reply(Pid, Request) ->
+  Pid ! {self(), Request},
+  receive
+    {Pid, Response} -> Response
+  end.
+
 %%% API
 
 start() -> spawn(fun () -> loop(0) end).
@@ -19,14 +26,6 @@ increment(Pid, Amount) ->
 % Returns the value of a counter.
 get(Pid) ->
   request_reply(Pid, get).
-
-
-%%% Internal implementation
-request_reply(Pid, Request) ->
-  Pid ! {self(), Request},
-  receive
-    {Pid, Response} -> Response
-  end.
 
 loop(State) ->
   receive
