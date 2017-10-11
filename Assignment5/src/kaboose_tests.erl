@@ -5,12 +5,6 @@
 % $ c(kaboose_tests).
 % $ eunit:test(kaboose).
 
-% From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
--ifndef(PRINT).
--define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
--endif.
--define(DEBUG, 1).
-
 playerNext(Parent, ActiveRoom) ->
   Parent ! kaboose:next(ActiveRoom).
 
