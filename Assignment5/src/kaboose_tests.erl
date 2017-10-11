@@ -1,6 +1,6 @@
 -module(kaboose_tests).
 -include_lib("eunit/include/eunit.hrl").
--export([player/1]).
+-export([player/2]).
 % To run:
 % $ c(kaboose_tests).
 % $ eunit:test(kaboose).
@@ -15,10 +15,8 @@
 -endif.
 -define(DEBUG, 1).
 
-player(Parent) ->
-  receive
-    {next, ActiveRoom} -> Parent ! kaboose:next(ActiveRoom)
-  end.
+player(Parent, ActiveRoom) ->
+  Parent ! kaboose:next(ActiveRoom).
 
 demo_test() -> 
   {ok, Server} = kaboose:start(),
@@ -113,33 +111,10 @@ next_who_are_you_setup_test() ->
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
   Me = self(),
   {ActiveRoom, Me} = kaboose:play(Room),
-  % process_flag(trap_exit, true),
-  spawn(fun() -> kaboose:next(ActiveRoom),
-                      receive 
-                        Msg -> Me ! Msg
-                        % Msg -> io:format(user, "~w", [Msg]), Message = Msg
-                      end
-             end).
-                      % exit(Message) end),
-
-  % timer:sleep(2000).
-  % receive
-  %   Msg -> true
-  % end,
-  % spawn(fun() ->
-  %         % timer:sleep(1000),
-  %         kaboose:next(ActiveRoom),
-  %         receive
-  %           Msg -> Me ! Msg
-  %         end
-  %       % end).
-  %       end),
-  % receive
-  %   Msg -> ?assertEqual({error, who_are_you}, Msg)
-  % end.
-  % ?assert(false).
-  
-
+  spawn(fun() -> player(Me, ActiveRoom) end),
+  receive
+    Msg -> ?assertEqual({error, who_are_you}, Msg)
+  end.
 
 timesup_no_question_asked_test() ->
   {ok, Server} = kaboose:start(),
