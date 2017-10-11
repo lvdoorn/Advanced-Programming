@@ -37,4 +37,12 @@ It is not possible in our implementation to \texttt{play/1} in a room without qu
 Our implementation only returns errors that were specified in the assignment text. When processes terminate in an unexpected manner, in general we do not respawn them, but the program will crash.
 
 \section{Assessment of Implementation}
+Our implementation covers all functionality describe in the assignment text. We say this with confidence based on our test suite of 35 tests, which tests all points of the specification.
+
+Of course, ``testing can only show the presence of bugs", so we cannot be completely sure of the correct workings of our code. However, because we have decided not to cover every edge case, but only those specified in the assignment text, the number of untested cases is limited.
+
+Furthermore, \texttt{dialyzer} does not give any warnings for our code.
+
+We do not base our assessment on OnlineTA, because it only runs 3 tests for this assignment. 
+
 \end{document}
