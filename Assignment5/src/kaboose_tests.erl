@@ -199,11 +199,12 @@ scenario1_test() ->
   end,
   kaboose:next(ActiveRoom),
   kaboose:guess(ActiveRoom, Ref, 1),
-  kaboose:timesup(ActiveRoom),
+  ?assertEqual({ok, [1, 0, 0], #{"Nick_scenario1" => 0}, #{"Nick_scenario1" => 0}, false}, kaboose:timesup(ActiveRoom)),
   kaboose:next(ActiveRoom),
-  kaboose:guess(ActiveRoom, Ref, 2),
-  kaboose:timesup(ActiveRoom),
+  kaboose:guess(ActiveRoom, Ref, 3),
+  ?assertEqual({ok, [0, 0, 1], #{"Nick_scenario1" => 1000}, #{"Nick_scenario1" => 1000}, false}, kaboose:timesup(ActiveRoom)),
   kaboose:next(ActiveRoom),
+  timer:sleep(501),
   kaboose:guess(ActiveRoom, Ref, 3),
   kaboose:leave(ActiveRoom, Ref),
   receive
@@ -213,7 +214,7 @@ scenario1_test() ->
   receive
     MsgRejoin -> ?assertEqual({Me, {player_joined, "Nick_scenario1", 1}}, MsgRejoin)
   end,
-  ?assertEqual({ok, [0, 0, 1], #{"Nick_scenario1" => 1000}, #{"Nick_scenario1" => 1000}, true}, kaboose:timesup(ActiveRoom)).
+  ?assertEqual({ok, [0, 0, 1], #{"Nick_scenario1" => 500}, #{"Nick_scenario1" => 1500}, true}, kaboose:timesup(ActiveRoom)).
 
 nick_is_taken_test() ->
   clear_mailbox(),
