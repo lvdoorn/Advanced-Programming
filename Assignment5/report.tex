@@ -7,6 +7,11 @@
 
 \maketitle	
 
+\section{How to Run the Code}
+To run the code, in the \texttt{src} folder we start erlang shell by running \texttt{erl} command. From here, we can run code by specifying \texttt{module:function} and pass parameters if any, functions being situated under \texttt{kaboose.erl} (kaboose module) or \texttt{kaboose\_tests.erl} (kaboose\_tests module) files.
+
+To run tests, in the erlang shell we simply run \texttt{eunit:test(kaboose).} command.
+
 \section{Main Design}
 We have chosen to use different processes for each server, room and active room. When \texttt{kaboose:start()} is called, we call the function \texttt{loop/0}, which waits for the message \texttt{\{From, new\_room\}}, and will return the \texttt{Pid} of a new room when it receives this message.
 
@@ -24,4 +29,5 @@ No validation if rejoining/leaving players actually exist
 	
 	
 \section{Assessment of Implementation}
+
 \end{document}
