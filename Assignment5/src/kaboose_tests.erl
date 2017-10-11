@@ -5,12 +5,6 @@
 % $ c(kaboose_tests).
 % $ eunit:test(kaboose).
 
-% From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
--ifndef(PRINT).
--define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
--endif.
--define(DEBUG, 1).
-
 playerNext(Parent, ActiveRoom) ->
   Parent ! kaboose:next(ActiveRoom).
 
@@ -104,7 +98,7 @@ next_has_active_question_test() ->
   ?assertEqual({ok, {"a?", [{correct, "a"}, "b", "c"]}}, kaboose:next(ActiveRoom)),
   ?assertEqual({error, has_active_question}, kaboose:next(ActiveRoom)).
 
-next_who_are_you_setup_test() ->
+next_who_are_you_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
