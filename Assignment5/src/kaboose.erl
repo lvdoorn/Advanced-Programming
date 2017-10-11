@@ -99,7 +99,7 @@ roomLoop(Questions) ->
 % Dist: [Counter]
 % LastQ: Map(Ref -> Counter)
 % Total: Map(Ref -> Counter)
-% Time: Microseconds since the question was made active
+% Time: Nanoseconds since the question was made active
 % HaveGuessed: [Ref]
 
 activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed) -> 
@@ -121,8 +121,8 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
             T =:= [] -> true;
             true -> false
           end,
-          maps:map(fun(K, V) -> increment(maps:get(K, Total), getC(V)) end, LastQ),
-          From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), keyValueMap(LastQ, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), keyValueMap(Total, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), Final}},
+          maps:map(fun(K, V) -> counter:increment(maps:get(K, Total), counter:get(V)) end, LastQ),
+          From ! {self(), {ok, lists:map(fun(E) -> counter:get(E) end, Dist), keyValueMap(LastQ, fun(K) -> getName(K, Players) end, fun(V) -> counter:get(V) end), keyValueMap(Total, fun(K) -> getName(K, Players) end, fun(V) -> counter:get(V) end), Final}},
           if
             Final -> end_process;
             true -> activeRoomLoop(T, Players, CRef, false, Dist, LastQ, Total, Time, HaveGuessed)
@@ -136,7 +136,7 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
       case IsNickAvailable of
         true -> From ! {self(), {ok, From}},
                 CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
-                activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time, HaveGuessed);
+                activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, counter:start(), Total), Time, HaveGuessed);
         false -> request_reply_async(From, {error, Nick, is_taken}), 
                  activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
       end;
@@ -165,9 +165,9 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
     case isGuessValid(Answers, Index, Active, From, HaveGuessed) of
       true -> 
         NewHaveGuessed = [From|HaveGuessed],
-        increment(lists:nth(Index, Dist)),
+        counter:increment(lists:nth(Index, Dist)),
         case lists:nth(Index, Answers) of
-          {correct, _} -> increment(maps:get(Ref, LastQ), Score);
+          {correct, _} -> counter:increment(maps:get(Ref, LastQ), Score);
           _ -> doNothing
         end;
       false -> NewHaveGuessed = HaveGuessed
@@ -177,11 +177,11 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
 
 % Returns a list of length Length filled with counters.
 counters(0) -> [];
-counters(Length) -> [startC()|counters(Length - 1)].
+counters(Length) -> [counter:start()|counters(Length - 1)].
 
 % Every element in the input list will map to a counter at zero.
 defaultMap([]) -> #{};
-defaultMap([H|T]) -> maps:put(H, startC(), defaultMap(T)).
+defaultMap([H|T]) -> maps:put(H, counter:start(), defaultMap(T)).
 
 % activePlayers(Map) -> length(lists:filter(fun(V) -> case V of {_, true} -> true; (_) -> false end, maps:values(Map))).
 activePlayers(Map) -> length(lists:filter(fun(V) -> matchV(V) end, maps:values(Map))).
@@ -199,37 +199,6 @@ keyValueMap(Map, Fun1, Fun2) ->
   List = maps:to_list(Map),
   Mapped = lists:map(fun({A, B}) -> {Fun1(A), Fun2(B)} end, List),
   maps:from_list(Mapped).
-
-startC() -> spawn(fun () -> loop(0) end).
-
-% Increments a counter by one.
-increment(Pid) ->
-  request_reply(Pid, inc).
-
-% Increments a counter by Amount.
-increment(Pid, Amount) ->
- request_reply(Pid, {inc, Amount}).
-
-% Returns the value of a counter.
-getC(Pid) ->
-  request_reply(Pid, get).
-
-loop(State) ->
-  receive
-    {From, inc} ->
-    NewState = State + 1,
-    From ! {self(), NewState},
-    loop(NewState);
-
-    {From, {inc, Amount}} ->
-    NewState = State + Amount,
-    From ! {self(), NewState},
-    loop(NewState);
-
-    {From, get} ->
-    From ! {self(), State},
-    loop(State)
-  end.
 
 isGuessValid(Answers, Index, Active, From, HaveGuessed) ->
     IsQuestionActive = Active =:= true,
