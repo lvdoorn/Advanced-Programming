@@ -8,7 +8,6 @@
 % TODO tests to write:
 % Player joins a room while a question is active and guesses
 % Player leaves a room while a question is active
-% Time bonus
 % From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
 -ifndef(PRINT).
 -define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
@@ -119,7 +118,7 @@ next_who_are_you_setup_test() ->
     Msg -> ?assertEqual({error, who_are_you}, Msg)
   end.
 
-next_nice_try_test() ->
+timesup_nice_try_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
@@ -325,6 +324,38 @@ guess_no_active_question_test() ->
   ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
+
+leave_while_active_question_test() ->
+  clear_mailbox(),
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  Me = self(),
+  receive
+    MsgJoin -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, MsgJoin)
+  end,
+  kaboose:next(ActiveRoom),
+  kaboose:leave(ActiveRoom, Ref),
+  receive
+    MsgLeave -> ?assertEqual({Me, {player_left, "Nickname", 0}}, MsgLeave)
+  end.
+
+join_while_active_question_test() ->
+  {ok, Server} = kaboose:start(),
+  {ok, Room} = kaboose:get_a_room(Server),
+  kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
+  {ActiveRoom, _} = kaboose:play(Room),
+  kaboose:next(ActiveRoom),
+  {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  Me = self(),
+  receive
+    MsgJoin -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, MsgJoin)
+  end,
+  kaboose:guess(ActiveRoom, Ref, 1),
+  ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, true}, kaboose:timesup(ActiveRoom)).
+
 
 genPidDiffToSelf(Pid) -> NewPid = list_to_pid("<0.75.0>"),
                          NewPid1 = list_to_pid("<0.76.0>"),

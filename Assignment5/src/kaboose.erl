@@ -136,7 +136,7 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
       case IsNickAvailable of
         true -> From ! {self(), {ok, From}},
                 CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
-                activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, counter:start(), Total), Time, HaveGuessed);
+                activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, maps:put(From, counter:start(), LastQ), maps:put(From, counter:start(), Total), Time, HaveGuessed);
         false -> request_reply_async(From, {error, Nick, is_taken}), 
                  activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
       end;
