@@ -104,7 +104,7 @@ next_has_active_question_test() ->
   ?assertEqual({ok, {"a?", [{correct, "a"}, "b", "c"]}}, kaboose:next(ActiveRoom)),
   ?assertEqual({error, has_active_question}, kaboose:next(ActiveRoom)).
 
-next_who_are_you_setup_test() ->
+next_who_are_you_test() ->
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
