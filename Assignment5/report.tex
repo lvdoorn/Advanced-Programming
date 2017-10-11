@@ -8,15 +8,15 @@
 \maketitle	
 
 \section{How to Run the Code}
-To run the code, first we need to compile it. In the \texttt{src} folder we start erlang shell by running \texttt{erl} command, and then we compile following the files:
+To run the code, first we need to compile it. In the \texttt{src} folder we start Erlang shell by running \texttt{erl} command, and then we compile following the files:
 \begin{itemize}
 	\item \texttt{c(kaboose).}
 	\item \texttt{c(counter).}
 	\item \texttt{c(kaboose\_tests).}
 \end{itemize} 
-Now we are ready to run the code. Once in erlang shell, we run code by specifying \texttt{module:function} and pass parameters if any, functions being situated under \texttt{kaboose.erl} (kaboose module), \texttt{kaboose\_tests.erl} (kaboose\_tests module), \texttt{counter.erl} (counter module) files.
+Now we are ready to run the code. Once in Erlang shell, we run code by specifying \texttt{module:function} and pass parameters if any, functions being situated under \texttt{kaboose.erl} (kaboose module), \texttt{kaboose\_tests.erl} (kaboose\_tests module), \texttt{counter.erl} (counter module) files.
 
-To run tests, in the erlang shell we simply run \texttt{eunit:test(kaboose).} command.
+To run tests, in the Erlang shell we simply run \texttt{eunit:test(kaboose).} command.
 
 \section{Main Design}
 We have chosen to use different processes for each server, room and active room. When \texttt{kaboose:start()} is called, we call the function \texttt{loop/0}, which waits for the message \texttt{\{From, new\_room\}}, and will return the \texttt{Pid} of a new room when it receives this message.
@@ -42,12 +42,14 @@ It may happen that players of the game leave while the game has not yet finished
 We do not validate whether \texttt{Ref}s that send \texttt{leave} or \texttt{rejoin} messages actually exist. This means that our program will crash if players who have never joined a game leave or rejoin it.
 
 \subsection{Rooms Without Questions}
-It is not possible in our implementation to \texttt{play/1} in a room without questions. In this case, are program will return a  \texttt{function\_clause} error, since the questions parameter of \texttt{activeRoomLoop/9} is given as \texttt{Questions = [{Description, Answers}|T]}, meaning that an empty list will not be matched.
+It is not possible in our implementation to \texttt{play/1} in a room without questions. In this case, our program will return a  \texttt{function\_clause} error, since the questions parameter of \texttt{activeRoomLoop/9} is given as \texttt{Questions = [{Description, Answers}|T]}, meaning that an empty list will not be matched.
 
 \subsection{Unexpected Errors}
-Our implementation only returns errors that were specified in the assignment text. When processes terminate in an unexpected manner, in general we do not respawn them, but the program will crash.
+Our implementation only handles errors that were specified in the assignment text. When processes terminate in an unexpected manner, in general we do not re-spawn them, but the program will crash.
 
 \section{Assessment of Implementation}
+We used \texttt{EUnit} framework to write our unit tests. \texttt{kaboose\_tests} module hosts the test suite for the functionality exposed by \texttt{kaboose} module. We tested the output of different functions to prove their correctness, also we created various test cases proving the capabilities of server, room, players, conductor and the admitted interaction between these.
+
 Our implementation covers all functionality describe in the assignment text. We say this with confidence based on our test suite of 35 tests, which tests all points of the specification.
 
 Of course, ``testing can only show the presence of bugs", so we cannot be completely sure of the correct workings of our code. However, because we have decided not to cover every edge case, but only those specified in the assignment text, the number of untested cases is limited.
@@ -55,5 +57,7 @@ Of course, ``testing can only show the presence of bugs", so we cannot be comple
 Furthermore, \texttt{dialyzer} does not give any warnings for our code.
 
 We do not base our assessment on OnlineTA, because it only runs 3 tests for this assignment.
+
+If the tests are run under Windows environment, we see that one test is failing, which is not the case on a Linux environment. We believe that this is due to the usage of \texttt{erlang:system\_time()}, which behaves differently on Windows platform. Apparently on Windows platform it returns the value in microseconds while on Linux it return the value in nanoseconds, which is the cause to the failing test.
 
 \end{document}
