@@ -48,12 +48,11 @@ timesup(ActiveRoom) -> request_reply(ActiveRoom, timesup).
 
 join(ActiveRoom, Nick) -> request_reply(ActiveRoom, {join, Nick}).
 
-% TODO use async where possible
-leave(ActiveRoom, Ref) -> request_reply(ActiveRoom, {leave, Ref}).
+leave(ActiveRoom, Ref) -> request_reply_async(ActiveRoom, {leave, Ref}).
 
-rejoin(ActiveRoom, Ref) -> request_reply(ActiveRoom, {rejoin, Ref}).
+rejoin(ActiveRoom, Ref) -> request_reply_async(ActiveRoom, {rejoin, Ref}).
 
-guess(ActiveRoom, Ref, Index) -> request_reply(ActiveRoom, {guess, Ref, Index}).
+guess(ActiveRoom, Ref, Index) -> request_reply_async(ActiveRoom, {guess, Ref, Index}).
 
 % Copied from lecture slides
 request_reply(Pid, Request) ->
@@ -66,24 +65,22 @@ request_reply_async(Pid, Request) ->
   Pid ! {self(), Request}.
 
 loop() ->
-    receive
-      {From, new_room} -> 
-        try
-            From ! {self(), {ok, spawn(fun() -> roomLoop([]) end)}}
-        catch
-            _:Error -> request_reply_async(From, errorTuple(Error))
-        after 
-            loop()
-        end
+  receive
+    {From, new_room} -> 
+      try
+        From ! {self(), {ok, spawn(fun() -> roomLoop([]) end)}}
+      catch
+        _:Error -> request_reply_async(From, errorTuple(Error))
+      after 
+        loop()
+      end
   end.
 
 
 roomLoop(Questions) ->
   receive
     {From, {add_question, Question}} ->
-      IsQuestionValid = validateQuestion(Question, From),
-
-      case IsQuestionValid of
+      case validateQuestion(Question, From) of
         true -> From ! {self(), ok},
                 roomLoop(Questions ++ [Question]);
         false -> roomLoop(Questions)
@@ -98,12 +95,6 @@ roomLoop(Questions) ->
       roomLoop(Questions)
   end.
  
-
-
-% activeRoomLoop works like this: we start with a dummy question which is inactive
-% when next/1 is called, we return the second element in the questions list and make it active.
-% when timesup/1 is called, the current question is simply made inactive.
-
 % Players: Map(Ref -> {Nickname, Active[true/false]})
 % Dist: [Counter]
 % LastQ: Map(Ref -> Counter)
@@ -111,41 +102,21 @@ roomLoop(Questions) ->
 % Time: Microseconds since the question was made active
 % HaveGuessed: [Ref]
 
-% activeRoomLoop([], _, _, _, _, _, _, _) -> end_process.
-
 activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed) -> 
-  % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(Total))),
-  % ?PRINT(lists:map(fun(K) -> getC(K) end, maps:values(LastQ))),
-  % Questions = [{Description, Answers}|T], % TODO this in function header, JS style
-  % {NextDesc, NextAns} = if
-  %   length(T) =:= 0 -> {error, no_more_questions};
-  %   true -> lists:nth(2, Questions)
-  % end,
-  % FirstQ = if
-  %   (Answers =:= ["dummy"]) -> true;
-  %   true -> false
-  % end,
-
   receive
   % next, LastQ is reset here
     {From, next} -> 
-      IsNextValid = validateNextQuestion(From, CRef, Active),
-      NewTotal = if
-        % FirstQ -> defaultMap(maps:keys(Players));
-        true -> Total
-      end,
-      case IsNextValid of
+      case validateNextQuestion(From, CRef, Active) of
         true -> From ! {self(), {ok, {Description, Answers}}},
-                activeRoomLoop(Questions, Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), NewTotal, erlang:system_time(), []);
+                activeRoomLoop(Questions, Players, CRef, true, counters(length(Answers)), defaultMap(maps:keys(Players)), Total, erlang:system_time(), []);
         false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
       end;
 
   % timesup
     {From, timesup} ->
-      IsTimesupValid = validateTimesup(From, CRef, Active),
-      case IsTimesupValid of 
+      case validateTimesup(From, CRef, Active) of 
         false -> activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
-        true -> 
+        true ->
           Final = if
             T =:= [] -> true;
             true -> false
@@ -153,71 +124,56 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
           maps:map(fun(K, V) -> increment(maps:get(K, Total), getC(V)) end, LastQ),
           From ! {self(), {ok, lists:map(fun(E) -> getC(E) end, Dist), keyValueMap(LastQ, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), keyValueMap(Total, fun(K) -> getName(K, Players) end, fun(V) -> getC(V) end), Final}},
           if
-            Final =:= true -> end_process;
+            Final -> end_process;
             true -> activeRoomLoop(T, Players, CRef, false, Dist, LastQ, Total, Time, HaveGuessed)
           end
       end;
       
-
   % join
-     {From, {join, Nick}} ->
-     
-     GetNickFromPlayers = maps:filter(fun(_,{Nickname, _}) -> Nickname =:= Nick end, Players),
-     IsNickAvailable = GetNickFromPlayers =:= #{},
-
+    {From, {join, Nick}} ->
+      GetNickFromPlayers = maps:filter(fun(_,{Nickname, _}) -> Nickname =:= Nick end, Players),
+      IsNickAvailable = GetNickFromPlayers =:= #{},
       case IsNickAvailable of
-        true -> 
-          From ! {self(), {ok, From}},
-          CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
-          activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time, HaveGuessed);
+        true -> From ! {self(), {ok, From}},
+                CRef ! {CRef, {player_joined, Nick, activePlayers(Players) + 1}},
+                activeRoomLoop(Questions, maps:put(From, {Nick, true}, Players), CRef, Active, Dist, LastQ, maps:put(From, startC(), Total), Time, HaveGuessed);
         false -> request_reply_async(From, {error, Nick, is_taken}), 
                  activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
       end;
 
   %leave
-    {From, {leave, Ref}} ->
+    {_From, {leave, Ref}} ->
       % TODO no validation - not required. State in report.
-      From ! {self() , ok},
-      {Name, _} = maps:get(Ref, Players),
+      Name = getName(Ref, Players),
       CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
-      ?PRINT({CRef, {player_left, Name, activePlayers(Players) - 1}}),
-      activeRoomLoop(Questions, maps:put(From, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
+      activeRoomLoop(Questions, maps:put(Ref, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
   
   % rejoin
   % TODO no validation - not required. State in report.
-    {From, {rejoin, Ref}} ->
-      From ! {self() , ok},
-      {Name, _} = maps:get(Ref, Players),
+    {_From, {rejoin, Ref}} ->
+      Name = getName(Ref, Players),
       CRef ! {CRef, {player_joined, Name, activePlayers(Players) + 1}},
       activeRoomLoop(Questions, maps:put(Ref, {Name, true}, Players), CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
 
   % guess, score is added to LastQ here
     {From, {guess, Ref, Index}} ->
-      From ! {self(), ok},
-      % if
-      %   (not Active) or (Index < 1) or (Index > length(Answers)) ->
-      %     activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time);
-      %   true ->
-          Timesup = (erlang:system_time() - Time < 500000000),
-          Score = if
-            Timesup -> 1000;
-            true -> 1000
-          end,
-      % {Name, _} = maps:get(Ref, Players), % TODO replace with getName
-
-          case isGuessValid(Answers, Index, Active, From, HaveGuessed) of
-            true -> 
-              NewHaveGuessed = [From|HaveGuessed],
-              increment(lists:nth(Index, Dist)),
-              case lists:nth(Index, Answers) of
-                {correct, _} -> increment(maps:get(Ref, LastQ), Score);
-                _ -> doNothing
-              end;
-            false -> NewHaveGuessed = HaveGuessed
-          end,
-          activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, NewHaveGuessed)
-      % end
-    end.
+    Timesup = (erlang:system_time() - Time < 500000000),
+    Score = if
+      Timesup -> 1000;
+      true -> 500
+    end,
+    case isGuessValid(Answers, Index, Active, From, HaveGuessed) of
+      true -> 
+        NewHaveGuessed = [From|HaveGuessed],
+        increment(lists:nth(Index, Dist)),
+        case lists:nth(Index, Answers) of
+          {correct, _} -> increment(maps:get(Ref, LastQ), Score);
+          _ -> doNothing
+        end;
+      false -> NewHaveGuessed = HaveGuessed
+    end,
+    activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, NewHaveGuessed)
+  end.
 
 % Returns a list of length Length filled with counters.
 counters(0) -> [];
@@ -243,11 +199,6 @@ keyValueMap(Map, Fun1, Fun2) ->
   List = maps:to_list(Map),
   Mapped = lists:map(fun({A, B}) -> {Fun1(A), Fun2(B)} end, List),
   maps:from_list(Mapped).
-
-% Adds two maps
-% addMaps(Map1, Map2) ->
-%   Keys = maps:keys(Map1)
-
 
 startC() -> spawn(fun () -> loop(0) end).
 
@@ -292,38 +243,37 @@ wrapInTry(F) -> try F()
                     _:Error -> errorTuple(Error)
                 end.
 
-
 errorTuple(Msg) -> {error, Msg}.
 
 validateQuestion(Question, From) ->
-   IsQuestionValid = case Question of
-                        {_, _} -> Question;
-                        _ -> request_reply_async(From, errorTuple(format_is_invalid)), false
-                     end,
+  IsQuestionValid = case Question of
+                      {_, _} -> Question;
+                      _ -> request_reply_async(From, errorTuple(format_is_invalid)), false
+                    end,
 
-   IsDescValid = case IsQuestionValid of
-                   {Description, _} ->
-                    case validateNonEmptyString(Description) of
-                      ok -> ok;
-                      Msg -> request_reply_async(From, errorTuple(Msg)), false
-                    end;
+  IsDescValid = case IsQuestionValid of
+                  {Description, _} ->
+                  case validateNonEmptyString(Description) of
+                    ok -> ok;
+                    Msg -> request_reply_async(From, errorTuple(Msg)), false
+                  end;
                   false -> false
-                  end,
+                end,
 
-   IsAnswerValid = case IsQuestionValid of
+  IsAnswerValid = case IsQuestionValid of
                     {_, Answer} ->
                       case validateAnswer(Answer) of
                         ok -> ok;
                         Msg1 -> request_reply_async(From, errorTuple(Msg1)), false
                       end;
                     false -> false
-                   end,
-IsDescValid =:= ok andalso IsAnswerValid =:= ok.
+                  end,
+  IsDescValid =:= ok andalso IsAnswerValid =:= ok.
 
-isConductor(From, CRef, Msg) ->case From =:= CRef of
-                            true -> true;
-                            false -> request_reply_async(From, errorTuple(Msg)), false
-                          end.
+isConductor(From, CRef, Msg) -> case From =:= CRef of
+                                  true -> true;
+                                  false -> request_reply_async(From, errorTuple(Msg)), false
+                                end.
 
 validateTimesup(From, CRef, Active) ->
   IsConductor = isConductor(From, CRef, nice_try),
@@ -346,7 +296,6 @@ validateNextQuestion(From, CRef, Active) ->
 % Input validation section
 isNonEmptyString(Str) -> io_lib:printable_list(Str) andalso Str =/= "".
                                 
-
 validateNonEmptyString(Str) -> case isNonEmptyString(Str) of
                                 true -> ok;
                                 false -> not_a_non_empty_string
