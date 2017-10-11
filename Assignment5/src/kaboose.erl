@@ -10,25 +10,10 @@
        , leave/2
        , rejoin/2
        , guess/3
-       , counters/1
-       , defaultMap/1
-       , keyValueMap/3
-       , activePlayers/1
        , validateNonEmptyString/1
        , validateAnswer/1
-       , isNonEmptyString/1
        , isConductor/3
-       , player/1
        ]).
-% From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
--ifndef(PRINT).
--define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
--endif.
-
-player(Parent) ->
-  receive
-    {next, ActiveRoom} -> Parent ! kaboose:next(ActiveRoom)
-  end.
 
 start() -> wrapInTry(fun() -> 
                         {ok, spawn(fun loop/0)}
@@ -76,7 +61,6 @@ loop() ->
       end
   end.
 
-
 roomLoop(Questions) ->
   receive
     {From, {add_question, Question}} ->
@@ -101,7 +85,6 @@ roomLoop(Questions) ->
 % Total: Map(Ref -> Counter)
 % Time: Nanoseconds since the question was made active
 % HaveGuessed: [Ref]
-
 activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed) -> 
   receive
   % next, LastQ is reset here
@@ -141,15 +124,13 @@ activeRoomLoop(Questions = [{Description, Answers}|T], Players, CRef, Active, Di
                  activeRoomLoop(Questions, Players, CRef, Active, Dist, LastQ, Total, Time, HaveGuessed)
       end;
 
-  %leave
+  % leave
     {_From, {leave, Ref}} ->
-      % TODO no validation - not required. State in report.
       Name = getName(Ref, Players),
       CRef ! {CRef, {player_left, Name, activePlayers(Players) - 1}},
       activeRoomLoop(Questions, maps:put(Ref, {Name, false}, Players), CRef, Active, Dist, LastQ, Total, Time, HaveGuessed);
   
   % rejoin
-  % TODO no validation - not required. State in report.
     {_From, {rejoin, Ref}} ->
       Name = getName(Ref, Players),
       CRef ! {CRef, {player_joined, Name, activePlayers(Players) + 1}},

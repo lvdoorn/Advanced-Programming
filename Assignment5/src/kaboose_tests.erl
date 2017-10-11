@@ -5,9 +5,6 @@
 % $ c(kaboose_tests).
 % $ eunit:test(kaboose).
 
-% TODO tests to write:
-% Player joins a room while a question is active and guesses
-% Player leaves a room while a question is active
 % From : http://blog.rusty.io/2011/01/13/beautiful-erlang-print/
 -ifndef(PRINT).
 -define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
@@ -144,10 +141,13 @@ join_same_nickname_test() ->
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
   {ActiveRoom, _} = kaboose:play(Room),
   kaboose:join(ActiveRoom, "Nickname"),
+  Me = self(),
+  receive
+    Msg -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, Msg)
+  end,
   ?assertEqual({error,"Nickname", is_taken}, kaboose:join(ActiveRoom, "Nickname")).
   
 join_test() ->
-  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"a?", [{correct, "a"}, "b", "c"]}),
@@ -184,7 +184,6 @@ timesup_test() ->
   ?assertEqual({ok,[0, 0, 0],#{},#{},false}, kaboose:timesup(ActiveRoom)).
 
 scenario1_test() ->
-  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"q1?", ["a", "b", {correct, "c"}]}),
@@ -216,7 +215,6 @@ scenario1_test() ->
   ?assertEqual({ok, [0, 0, 1], #{"Nick_scenario1" => 500}, #{"Nick_scenario1" => 1500}, true}, kaboose:timesup(ActiveRoom)).
 
 nick_is_taken_test() ->
-  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   ok = kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
@@ -287,6 +285,10 @@ send_multiple_guesses_to_a_question_test() ->
   kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  Me = self(),
+  receive
+    MsgJoin -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, MsgJoin)
+  end,
   ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
   kaboose:guess(ActiveRoom, Ref, 1),
   kaboose:guess(ActiveRoom, Ref, 1),
@@ -306,6 +308,10 @@ guess_index_out_of_range_test() ->
   kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  Me = self(),
+  receive
+    MsgJoin -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, MsgJoin)
+  end,
   ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
   kaboose:guess(ActiveRoom, Ref, 5),
   kaboose:guess(ActiveRoom, Ref, 0),
@@ -320,13 +326,16 @@ guess_no_active_question_test() ->
   kaboose:add_question(Room, {"q2?", [{correct, "c"}]}),
   {ActiveRoom, _} = kaboose:play(Room),
   {ok, Ref} = kaboose:join(ActiveRoom, "Nickname"),
+  Me = self(),
+  receive
+    MsgJoin -> ?assertEqual({Me, {player_joined, "Nickname", 1}}, MsgJoin)
+  end,
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, {"q1?", ["a", {correct, "c"}]}}, kaboose:next(ActiveRoom)),
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, false}, kaboose:timesup(ActiveRoom)).
 
 leave_while_active_question_test() ->
-  clear_mailbox(),
   {ok, Server} = kaboose:start(),
   {ok, Room} = kaboose:get_a_room(Server),
   kaboose:add_question(Room, {"q1?", ["a", {correct, "c"}]}),
@@ -340,7 +349,8 @@ leave_while_active_question_test() ->
   kaboose:leave(ActiveRoom, Ref),
   receive
     MsgLeave -> ?assertEqual({Me, {player_left, "Nickname", 0}}, MsgLeave)
-  end.
+  end,
+  ?assertEqual({ok, [0, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, true}, kaboose:timesup(ActiveRoom)).
 
 join_while_active_question_test() ->
   {ok, Server} = kaboose:start(),
@@ -356,19 +366,9 @@ join_while_active_question_test() ->
   kaboose:guess(ActiveRoom, Ref, 1),
   ?assertEqual({ok, [1, 0], #{"Nickname" => 0}, #{"Nickname" => 0}, true}, kaboose:timesup(ActiveRoom)).
 
-
 genPidDiffToSelf(Pid) -> NewPid = list_to_pid("<0.75.0>"),
                          NewPid1 = list_to_pid("<0.76.0>"),
                            case Pid =:= NewPid of
                              true -> NewPid1;
                              false -> NewPid
                            end.
-
-% From: http://erlang.org/pipermail/erlang-questions/2008-January/032527.html 
-clear_mailbox() ->
-    receive
-        _Any ->
-            clear_mailbox()
-    after 0 ->
-        ok
-    end.
