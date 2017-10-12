@@ -21,7 +21,7 @@ succeeding_request_exact_match_test() ->
   flamingo:request(Flamingo, {"/test", [{"name", Name}]}, Me, Ref),
   receive
     Msg -> ?assertEqual(Msg, {Ref, {200, lists:concat(["Greetings ", Name, "\n",
-                   "You have reached ", Flamingo])}}})
+                   "You have reached ", Flamingo])}})
   end.
 
 succeeding_request_not_exact_match_test() ->
@@ -33,7 +33,7 @@ succeeding_request_not_exact_match_test() ->
   flamingo:request(Flamingo, {"/te", [{"name", Name}]}, Me, Ref),
   receive
     Msg -> ?assertEqual(Msg, {Ref, {200, lists:concat(["Greetings ", Name, "\n",
-                   "You have reached ", Flamingo])}}})
+                   "You have reached ", Flamingo])}})
   end.
 
 failing_request_test() ->
@@ -76,7 +76,7 @@ longest_prefix_test_exact_match() ->
   flamingo:request(Flamingo, {"/test", [{"name", Name}]}, Me, Ref),
   receive
     Msg -> ?assertEqual(Msg, {Ref, {200, lists:concat(["Greetings ", Name, "\n",
-                   "You have reached ", Flamingo])}}})
+                   "You have reached ", Flamingo])}})
   end.
 
 longest_prefix_test_not_exact_match() ->
@@ -89,6 +89,19 @@ longest_prefix_test_not_exact_match() ->
   flamingo:request(Flamingo, {"/test", [{"name", Name}]}, Me, Ref),
   receive
     Msg -> ?assertEqual(Msg, {Ref, {200, lists:concat(["Greetings ", Name, "\n",
-                   "You have reached ", Flamingo])}}})
+                   "You have reached ", Flamingo])}})
+  end.
+
+same_prefix_in_different_modules_test() ->
+  {ok, Flamingo} = flamingo:new(env),
+  {ok, _Id1} = flamingo:route(Flamingo, ["/test"], failer, none),
+  {ok, _Id2} = flamingo:route(Flamingo, ["/test"], greeter, none),
+  Ref = make_ref(),
+  Me = self(),
+  Name = "me",
+  flamingo:request(Flamingo, {"/test", [{"name", Name}]}, Me, Ref),
+  receive
+    Msg -> ?assertEqual(Msg, {Ref, {200, lists:concat(["Greetings ", Name, "\n",
+                   "You have reached ", Flamingo])}})
   end.
 
