@@ -80,6 +80,9 @@ test(admires_fail, [fail]) :- g1(G), admires(G, kara, bruce).
 
 test(indifferent_succede, [true]) :- g1(G), indifferent(G, kara, bruce), !.
 test(indifferent_fail, [fail]) :- g1(G), indifferent(G, bruce, kara).
+test(indifferent_get_all_fail, [fail]) :- g1(G), indifferent(G, bruce, X).
+test(indifferent_get_all_combinations, all(X == [kara,barry,clark,oliver])) :- g1(G), indifferent(G, X, Y).
+test(indifferent_get_all_succede, all(Y == [bruce])) :- g1(G), indifferent(G, kara, Y).
 
 :- end_tests(indifferent).
 

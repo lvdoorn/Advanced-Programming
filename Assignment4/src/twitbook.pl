@@ -44,15 +44,42 @@ admires(G, X, Y) :- different(G, X, Y), admiresHelper(G, X, Y, [X, Y]).
 admiresHelper(G, X, Y, _) :- likes(G, X, Y).
 admiresHelper(G, X, Y, List) :- doesNotLike(G, X, Y), likes(G, X, Z), isNotElemInFriendList(G, Z, List), admiresHelper(G, Z, Y, [Z|List]).
 
-%% Works but will return the correct answer an infinite amount of
-%% times.
-indifferent(G, X, Y) :- different(G, X, Y), doesNotLike(G, X, Y), indifferentHelper(G, X, Y, G).
-indifferentHelper([person(Name, _)|T], Name, Y, Original) :- indifferentHelper(T, Name, Y, Original). % Everyone is indifferent to themselves for this predicate
-indifferentHelper([person(Name, _)|T], X, Y, Original) :- doesNotLike(Original, Name, Y), indifferentHelper(T, X, Y, Original).
-indifferentHelper([person(Name, _)|T], X, Y, Original) :- likes(Original, X, Name), indifferentHelper(Original, Name, Y, Original), indifferentHelper(T, X, Y, Original).
-indifferentHelper([], _, _, _).
+
+%% Get all people the X admires. Y should not be in that list.
+indifferent(Original, X, Y) :- getAllAdmires(Original, [], [X], XAdmires), 
+							   noElem(Original, Y, XAdmires).
+
+%% Get everybody that X admires.
+%% This is done with 2 accumulator helper lists, 
+%% 		AdmiresList - current list of unique people that X admires
+%% 		ToBeChecked - list of people to be added to AdmiresList; 
+%% 					  foreach person in this list, add its friends to ToBeChecked
+
+getAllAdmires(_, AdmiresList, [], AdmiresList).
+getAllAdmires(Original, AdmiresList, [ToCheck|ToBeChecked], L) :-
+				getFriendList(Original, ToCheck, ToCheckFriends),
+				appendlist(AdmiresList, ToBeChecked, CurrentAdmires),
+				removeSublistFromList(Original, CurrentAdmires, ToCheckFriends, NewFriendsToBeChecked),
+
+				appendlist(ToBeChecked, NewFriendsToBeChecked, NewToBeChecked),
+				appendlist(AdmiresList, [ToCheck], NewCheckedFriends),
+				getAllAdmires(Original, NewCheckedFriends, NewToBeChecked, L).
+
+
+appendlist([], X, X).
+appendlist([T|H], X, [T|L]) :- appendlist(H, X, L).
 
 same_world(_, _, _).
+
+noElem(_, _, []).
+noElem(Original, X, [Y|Z]) :- different(Original, X, Y), 
+							  noElem(Original, X, Z).
+
+removeSublistFromList(_, _, [], []).
+removeSublistFromList(Original, Y, [X|W], Z):- elem(X, Y), 
+								removeSublistFromList(Original, Y, W, Z).
+removeSublistFromList(Original, Y, [X|W], [X|Z]) :- noElem(Original, X, Y), 
+									 removeSublistFromList(Original, Y, W, Z).
 
 % Helper functions
 isNotElemInFriendList(_, _, []).
