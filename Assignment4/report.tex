@@ -16,11 +16,39 @@ We run our tests by \texttt{'swipl -f tests.pl -t run\_tests'} command in the ro
 If we want to run some specific tests or check manually predicates, we run \texttt{'swipl tests.pl'}. This is possible because \texttt{tests.pl} file contains a reference to \texttt{twitbook.pl} file.
 
 \section{Implementation Details}
-Unfortunately, we have not been able to get all predicates working. All predicates from level 1 work, and from level 2 \texttt{admires/3} works, but \texttt{indifferent/3} and \texttt{same\_world/3} do not work. We have tried to implement \texttt{indifferent/3}, but get in a situation where either edge cases do not work, or infinite true answers are returned. 
+We implemented all mandatory predicates (sections: Warm-up, Level 1, Level 2) and respected all the requirements and restrictions, namely:
+\begin{itemize}
+	\item predicates work for both checking and enumerating solutions;
+	\item all predicates consist of pure facts and rules only; we do not use any built-in Prolog predicates or control operators.  
+\end{itemize} 
+
+\section{Re-submission}
+For the re-submission we had to fix the indifferent predicate.
+
+In order to solve the indifferent predicate we set the goal to determine the set of persons that a person admires and then check if the person we are looking for is, or is not in that set.
+
+The difficulty of implementing the \texttt{indifferent} predicate consists of finding the right approach and also to create appropriate helper functions with the right granularity that will give the expected results and not more (because we can not use cuts). Thus, we created the following helper functions:
+\begin{itemize}
+	\item \texttt{appendList/3}
+	\item \texttt{removeSublistFromList/4}, which also uses
+	\texttt{elem/2} (is element in list) and  \texttt{noElem/3} (not an element in list).
+	\item \texttt{getAllAdmires/4} is the predicate that actually computes the set of persons that a person admires. \texttt{getAllAdmires} uses 2 accumulator lists:
+	\begin{itemize}
+		\item \texttt{AdmiresList} to keep track of people that a person admires;
+		\item \texttt{ToBeChecked} a list with people that are friends of those that are already in \texttt{AdmiresList} and are yet to be added to the admires list.
+	\end{itemize} 
+\end{itemize} 
+
+Once we have the set of persons that a person admires, the final step is to check that the other person (i.e. \texttt{indifferent(\_, X, Y}), the other person is \texttt{Y}) is not in that set. If this is the case, the indifferent predicate succeeds, otherwise it fails. This operation is done in \texttt{indifferent/3}.
+
+The solution explained above gives correct and finite results, which we also prove by unit tests in \texttt{indifferent} section under \texttt{tests.pl} file. The OnlineTA is satisfied and all tests pass.
+
 
 \section{Assessment of Implementation}
 In order to prove the correctness of implementation, we used \texttt{PL-Unit}, an unit-test framework for Prolog. For each predicate there is a dedicated section of tests which checks for succeeding and failing cases.
-From our test cases and onlineTA we are pretty confident that the predicates from level 1 and \texttt{admires/3} work correctly. We have written our own test cases and see that onlineTA generates many random graphs on which it is tested.
+
+From our test suite and OnlineTA we are pretty confident that predicates work correctly. We have written our own test cases and see that OnlineTA generates many random graphs on which it is tested.
+
 We have a high coverage of tests which we can prove by running \texttt{'show\_coverage(run\_tests).'} provided by the testing framework. We have 100\% coverage of the \texttt{twitbook.pl} file.
 
 
