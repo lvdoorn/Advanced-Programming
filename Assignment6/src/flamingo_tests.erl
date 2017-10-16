@@ -13,15 +13,16 @@ route_test() ->
   {ok, _Id} = flamingo:route(Flamingo, ["/test"], greeter, none).
 
 succeeding_request_exact_match_test() ->
-  {ok, Flamingo} = flamingo:new(env),
+  Env = "test",
+  {ok, Flamingo} = flamingo:new(Env),
   {ok, _Id} = flamingo:route(Flamingo, ["/test"], greeter, none),
   Ref = make_ref(),
   Me = self(),
   Name = "me",
   flamingo:request(Flamingo, {"/test", [{"name", Name}]}, Me, Ref),
   receive
-    Msg -> ?assertEqual(Msg, {Ref, {200, lists:concat(["Greetings ", Name, "\n",
-                   "You have reached ", Flamingo])}})
+    Msg -> ?assertEqual({Ref, {200, lists:concat(["Greetings ", Name, "\n",
+                   "You have reached ", Env])}}, Msg)
   end.
 
 succeeding_request_not_exact_match_test() ->

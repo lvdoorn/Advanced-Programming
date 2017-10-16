@@ -5,4 +5,4 @@
 initialise(_Arg) -> {ok, nothing}.
 
 action({_Path, [{"x", X}, {"y", Y}]}, _, _) ->
-    {no_change, integer_to_list(list_to_integer(X) + list_to_integer(Y))}.
+  {no_change, integer_to_list(list_to_integer(X) + list_to_integer(Y))}.
