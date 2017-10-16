@@ -2,8 +2,8 @@
 -include_lib("eunit/include/eunit.hrl").
 
 % To run:
-% $ c(flamingo_tests).
-% $ eunit:test(flamingo).
+% $ c(counter_tests).
+% $ eunit:test(counter).
 
 inc_test() ->
   {ok, Flamingo} = flamingo:new("The Flamingo Server"),
