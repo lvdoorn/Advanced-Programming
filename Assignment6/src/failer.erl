@@ -5,4 +5,3 @@ initialise(_Arg) -> {ok, nothing}.
 
 action(_, _, _) ->
   exit(self(), ok).
- 

@@ -15,10 +15,11 @@ action({"/dec_with", Arg}, _Env, State) ->
 
 % Private functions
 getN(Arg) ->
-	     case Arg of 
-				[{"x", Number}] -> case Number >= 0 of
-										true -> Number;
-										false -> 1
-									end;
-				[] -> 1
-		 end.
+  case Arg of
+		[{"x", Number}] ->
+    case Number > 0 of
+			true -> Number;
+			false -> 1
+  	end;
+	  [] -> 1
+  end.
