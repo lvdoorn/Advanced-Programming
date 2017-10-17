@@ -104,9 +104,13 @@ same_prefix_in_route_group_test() ->
   {ok, Flamingo} = flamingo:new(env),
   ?assertEqual({error, invalid_prefixes}, flamingo:route(Flamingo, ["/test", "/test"], greeter, none)).
 
-empty_prefixes_in_route__test() ->
+no_prefix_in_route_test() ->
   {ok, Flamingo} = flamingo:new(env),
   ?assertEqual({error, invalid_prefixes}, flamingo:route(Flamingo, [], greeter, none)).
+
+empty_prefix_in_route__test() ->
+  {ok, Flamingo} = flamingo:new(env),
+  ?assertEqual({error, invalid_prefixes}, flamingo:route(Flamingo, [""], greeter, none)).
 
 % error_request_test() ->
 %   {ok, Flamingo} = flamingo:new(env),

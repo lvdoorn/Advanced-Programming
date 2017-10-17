@@ -5,7 +5,6 @@
 -export([ new/1
         , route/4
         , request/4
-        , longestPrefix/2
         ]).
 
 %% gen_server callbacks
@@ -31,12 +30,17 @@ request(Flamingo, Request, From, Ref) ->
 init(Env) ->
   {ok, {Env, #{}}}.
 
-handle_call({route, Prefixes, Action, Arg}, _From, {Env, RoutingGroups}) ->
-  % Validated Prefixes
-  {ok, State} = Action:initialise(Arg),
-  Id = spawn(fun() -> routing_group({Action, State}) end),
-  NewRoutingGroups = add_route_to_map(Prefixes, Id, RoutingGroups),
-  {reply, {ok, Id}, {Env, NewRoutingGroups}}.
+handle_call({route, Prefixes, Action, Arg}, _From, OldEnv = {Env, RoutingGroups}) ->
+  case checkPrefixes(Prefixes) of
+    true -> {ok, State} = Action:initialise(Arg),
+      Id = spawn(fun() -> routing_group({Action, State}) end),
+      NewRoutingGroups = add_route_to_map(Prefixes, Id, RoutingGroups),
+      {reply, {ok, Id}, {Env, NewRoutingGroups}};
+    invalid_prefixes -> {reply, {error, invalid_prefixes}, OldEnv}
+  end.
+
+
+
 
 handle_cast({request, Request = {Path, _}, From, Ref}, Global = {Env, RoutingGroups}) ->
   case getActionModule(Path, RoutingGroups) of
@@ -96,4 +100,14 @@ longestPrefixHelper(Path, [H|Prefixes], Max) ->
     _       -> if length(H) > length(Max) -> longestPrefixHelper(Path, Prefixes, H);
                   true                    -> longestPrefixHelper(Path, Prefixes, Max)
                end
+  end.
+
+checkPrefixes(Prefixes) ->
+  SetLength = sets:size(sets:from_list(Prefixes)),
+  ListLength = length(Prefixes),
+  ContainsEmpty = lists:any(fun(E) -> E =:= "" end, Prefixes),
+  if  SetLength =/= ListLength -> invalid_prefixes;
+      ContainsEmpty -> invalid_prefixes;
+      ListLength =:= 0 -> invalid_prefixes;
+      true -> true
   end.
