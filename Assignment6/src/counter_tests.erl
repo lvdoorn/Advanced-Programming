@@ -4,6 +4,7 @@
 % To run:
 % $ c(counter_tests).
 % $ eunit:test(counter).
+%  cover:compile_directory().
 
 inc_test() ->
   {ok, Flamingo} = flamingo:new("The Flamingo Server"),
