@@ -76,6 +76,16 @@ inc_no_matching_route_test() ->
       Msg -> ?assertEqual(Msg, {Ref, {404, no_matching_routes}}) 
   end.
 
+invalid_args_test() ->
+  {ok, Flamingo} = flamingo:new("The Flamingo Server"),
+  flamingo:route(Flamingo, ["/inc_with", "/dec_with"], counter, 0),
+  Me = self(),
+  Ref = make_ref(),
+  flamingo:request(Flamingo, {"/dec_with", [{"y", -5}]}, Me, Ref),
+  receive
+      {Ref, Reply} -> ?assertEqual(Reply, {500, error}) 
+  end.
+
 same_action_module_different_groups_test() ->
   {ok, Flamingo} = flamingo:new("The Flamingo Server"),
   flamingo:route(Flamingo, ["/inc_with"], counter, 0),

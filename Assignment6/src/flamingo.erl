@@ -17,8 +17,8 @@
 -endif.
 
 %% API
-new(Global) -> 
-  gen_server:start(?MODULE, Global, []).
+new(Env) -> 
+  gen_server:start(?MODULE, Env, []).
 
 route(Flamingo, Prefixes, Action, Arg) -> 
   gen_server:call(Flamingo, {route, Prefixes, Action, Arg}).
@@ -59,19 +59,20 @@ code_change(_OldVsn, State, _Extra) ->
 % Private functions
 routing_group(LocalState = {Action, State}) ->
   receive
-    {Request, Env, From, Ref} -> 
-      case Action:action(Request, Env, State) of 
-        {new_state, Content, NewState} ->
-          From ! {Ref, {200, Content}},
-          routing_group({Action, NewState});
-        {no_change, Content} -> 
-          From ! {Ref, {200, Content}},
-          routing_group(LocalState);
-        _ -> From ! {Ref, {500, error}},
-         routing_group(LocalState)
-      end;
-    {From, _} -> From ! {self(), {500, error}},
-      routing_group(LocalState)
+    {Request, Env, From, Ref} ->
+      try Action:action(Request, Env, State) of
+          {new_state, Content, NewState} ->
+              From ! {Ref, {200, Content}},
+              routing_group({Action, NewState});
+          {no_change, Content} -> 
+              From ! {Ref, {200, Content}},
+              routing_group(LocalState);
+          _ -> From ! {Ref, {500, error}},
+             routing_group(LocalState)
+       catch
+        _:_ -> From ! {Ref, {500, error}},
+             routing_group(LocalState)
+       end
   end.
 
 % Maps each prefix to the corresponding routing group
