@@ -54,11 +54,9 @@ handle_cast({request, Request = {Path, _}, From, Ref}, Global = {Env, RoutingGro
   end,
   {noreply, Global}.
 
-% TODO
 handle_info(_Info, State) ->
   {noreply, State}.
 
-% TODO
 terminate(_Reason, _State) ->
   ok.
 

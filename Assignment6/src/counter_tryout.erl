@@ -12,7 +12,7 @@ try_it(Server) ->
   flamingo:request(Server, {"/inc_with", [{"x", 7}]},
                    Me, Ref),
   receive
-      {Ref, Reply} -> Reply, Me ! {self(), Reply}
+      {Ref, Reply} -> Reply
   end.
 
 % Flamingo = counter_tryout:server().
