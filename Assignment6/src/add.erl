@@ -1,5 +1,4 @@
 -module(add).
-
 -export([initialise/1, action/3]).
 
 initialise(_Arg) -> {ok, nothing}.
