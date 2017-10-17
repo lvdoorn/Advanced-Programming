@@ -2,18 +2,11 @@
 -behaviour(gen_server).
 
 %% API
--export([ new/1
-        , route/4
-        , request/4
-        ]).
+-export([ new/1, route/4, request/4]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
          terminate/2, code_change/3]).
-
--ifndef(PRINT).
--define(PRINT(Var), io:format("DEBUG: ~p:~p - ~p~n~n ~p~n~n", [?MODULE, ?LINE, ??Var, Var])).
--endif.
 
 %% API
 new(Env) -> 
@@ -33,16 +26,16 @@ handle_call({route, Prefixes, Action, Arg}, _From, OldEnv = {Env, RoutingGroups}
   case checkPrefixes(Prefixes) of
     true -> 
       try Action:initialise(Arg) of
-            {ok, State} ->  
-                  SId = spawn(fun() ->
-                        process_flag(trap_exit, true),
-                        Id = spawn_link(fun() -> routing_group({Action, State}) end),
-                        supervisor(Id, Action, Arg, {empty, empty, empty, empty})
-                      end),
-                  NewRoutingGroups = add_route_to_map(Prefixes, SId, RoutingGroups),
-                  {reply, {ok, SId}, {Env, NewRoutingGroups}}
+        {ok, State} ->  
+          SId = spawn(fun() ->
+                  process_flag(trap_exit, true),
+                  Id = spawn_link(fun() -> routing_group({Action, State}) end),
+                  supervisor(Id, Action, Arg, {empty, empty, empty, empty})
+                end),
+          NewRoutingGroups = add_route_to_map(Prefixes, SId, RoutingGroups),
+          {reply, {ok, SId}, {Env, NewRoutingGroups}}
       catch
-          _:Reason -> {reply, {error, Reason}, OldEnv}
+        _:Reason -> {reply, {error, Reason}, OldEnv}
       end;
     invalid_prefixes -> {reply, {error, invalid_prefixes}, OldEnv}
   end.
@@ -82,18 +75,18 @@ routing_group(LocalState = {Action, State}) ->
   receive
     {Request, Env, From, Ref} ->
       try Action:action(Request, Env, State) of
-          {new_state, Content, NewState} ->
-              From ! {Ref, {200, Content}},
-              routing_group({Action, NewState});
-          {no_change, Content} -> 
-              From ! {Ref, {200, Content}},
-              routing_group(LocalState);
-          _ -> From ! {Ref, {500, error}},
+        {new_state, Content, NewState} ->
+          From ! {Ref, {200, Content}},
+          routing_group({Action, NewState});
+        {no_change, Content} -> 
+          From ! {Ref, {200, Content}},
+          routing_group(LocalState);
+        _ -> From ! {Ref, {500, error}},
              routing_group(LocalState)
-       catch
+      catch
         _:_ -> From ! {Ref, {500, error}},
-             routing_group(LocalState)
-       end
+               routing_group(LocalState)
+      end
   end.
 
 % Maps each prefix to the corresponding routing group
