@@ -31,12 +31,11 @@ init(Env) ->
 
 handle_call({route, Prefixes, Action, Arg}, _From, OldEnv = {Env, RoutingGroups}) ->
   case checkPrefixes(Prefixes) of
-    true -> {ok, State} = Action:initialise(Arg),
-      
+    true -> 
       SId = spawn(fun() ->
         process_flag(trap_exit, true),
-        Id = spawn_link(fun() -> routing_group({Action, State}) end),
-        supervisor(Id, Action, Arg, {a, b, c, d})
+        Id = spawnRoutingGroup(Action, Arg),
+        supervisor(Id, Action, Arg, {empty, empty, empty, empty})
       end),
       NewRoutingGroups = add_route_to_map(Prefixes, SId, RoutingGroups),
       {reply, {ok, SId}, {Env, NewRoutingGroups}};
@@ -50,11 +49,9 @@ handle_cast({request, Request = {Path, _}, From, Ref}, Global = {Env, RoutingGro
   end,
   {noreply, Global}.
 
-% TODO
 handle_info(_Info, State) ->
   {noreply, State}.
 
-% TODO
 terminate(_Reason, _State) ->
   ok.
 
@@ -65,8 +62,7 @@ code_change(_OldVsn, State, _Extra) ->
 supervisor(Pid, Action, Arg, LastMsg = {_, _, From, Ref}) ->
   receive
     {'EXIT', Pid, _} ->
-      {ok, State} = Action:initialise(Arg),
-      Id = spawn_link(fun() -> routing_group({Action, State}) end),
+      Id = spawnRoutingGroup(Action, Arg),
       From ! {Ref, {500, fail}},
       supervisor(Id, Action, Arg, LastMsg);
     Msg ->
@@ -91,6 +87,10 @@ routing_group(LocalState = {Action, State}) ->
              routing_group(LocalState)
        end
   end.
+
+spawnRoutingGroup(Action, Arg) ->
+  {ok, State} = Action:initialise(Arg),
+  spawn_link(fun() -> routing_group({Action, State}) end).
 
 % Maps each prefix to the corresponding routing group
 add_route_to_map([], _, Map) -> Map;
