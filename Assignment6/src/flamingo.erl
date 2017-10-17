@@ -26,21 +26,22 @@ request(Flamingo, Request, From, Ref) ->
   gen_server:cast(Flamingo, {request, Request, From, Ref}).
 
 %% Internal
-
 init(Env) ->
   {ok, {Env, #{}}}.
 
 handle_call({route, Prefixes, Action, Arg}, _From, OldEnv = {Env, RoutingGroups}) ->
   case checkPrefixes(Prefixes) of
     true -> {ok, State} = Action:initialise(Arg),
-      Id = spawn(fun() -> routing_group({Action, State}) end),
-      NewRoutingGroups = add_route_to_map(Prefixes, Id, RoutingGroups),
-      {reply, {ok, Id}, {Env, NewRoutingGroups}};
+      
+      SId = spawn(fun() ->
+        process_flag(trap_exit, true),
+        Id = spawn_link(fun() -> routing_group({Action, State}) end),
+        supervisor(Id, Action, Arg, {a, b, c, d})
+      end),
+      NewRoutingGroups = add_route_to_map(Prefixes, SId, RoutingGroups),
+      {reply, {ok, SId}, {Env, NewRoutingGroups}};
     invalid_prefixes -> {reply, {error, invalid_prefixes}, OldEnv}
   end.
-
-
-
 
 handle_cast({request, Request = {Path, _}, From, Ref}, Global = {Env, RoutingGroups}) ->
   case getActionModule(Path, RoutingGroups) of
@@ -61,6 +62,18 @@ code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
 % Private functions
+supervisor(Pid, Action, Arg, LastMsg = {_, _, From, Ref}) ->
+  receive
+    {'EXIT', Pid, _} ->
+      {ok, State} = Action:initialise(Arg),
+      Id = spawn_link(fun() -> routing_group({Action, State}) end),
+      From ! {Ref, {500, fail}},
+      supervisor(Id, Action, Arg, LastMsg);
+    Msg ->
+      Pid ! Msg,
+      supervisor(Pid, Action, Arg, Msg)
+  end.
+
 routing_group(LocalState = {Action, State}) ->
   receive
     {Request, Env, From, Ref} ->

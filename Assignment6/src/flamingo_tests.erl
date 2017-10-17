@@ -112,12 +112,22 @@ empty_prefix_in_route__test() ->
   {ok, Flamingo} = flamingo:new(env),
   ?assertEqual({error, invalid_prefixes}, flamingo:route(Flamingo, [""], greeter, none)).
 
-% error_request_test() ->
-%   {ok, Flamingo} = flamingo:new(env),
-%   {ok, _Id} = flamingo:route(Flamingo, ["/fail"], failer, none),
-%   Ref = make_ref(),
-%   Me = self(),
-%   flamingo:request(Flamingo, {"/fail", []}, Me, Ref),  
-%   receive
-%     Msg -> ?assertEqual(Msg, {Ref, {500, fail}})
-%   end.
+error_request_test() ->
+  {ok, Flamingo} = flamingo:new(env),
+  {ok, _Id} = flamingo:route(Flamingo, ["/fail"], failer, none),
+  Ref = make_ref(),
+  Me = self(),
+  flamingo:request(Flamingo, {"/fail", []}, Me, Ref),  
+  receive
+    Msg -> ?assertEqual({Ref, {500, fail}}, Msg)
+  end.
+
+exception_test() ->
+  {ok, Flamingo} = flamingo:new(env),
+  flamingo:route(Flamingo, ["/exception"], exception, none),
+  Ref = make_ref(),
+  Me = self(),
+  flamingo:request(Flamingo, {"/exception", []}, Me, Ref),
+  receive
+    Msg -> ?assertEqual({Ref, {500, error}}, Msg)
+  end.
