@@ -5,6 +5,7 @@
 -export([ new/1
         , route/4
         , request/4
+        , longestPrefix/2
         ]).
 
 %% gen_server callbacks
@@ -38,9 +39,10 @@ handle_call({route, Prefixes, Action, Arg}, _From, {Env, RoutingGroups}) ->
   {reply, {ok, Id}, {Env, NewRoutingGroups}}.
 
 handle_cast({request, Request = {Path, _}, From, Ref}, Global = {Env, RoutingGroups}) ->
-  Id = getPidForPath(Path, RoutingGroups),
-  % TODO From ! {Ref, {404, no_matching_routes}};
-  Id ! {Request, Env, From, Ref},
+  case getActionModule(Path, RoutingGroups) of
+    error -> From ! {Ref, {404, no_matching_routes}};
+    Id -> Id ! {Request, Env, From, Ref}
+  end,
   {noreply, Global}.
 
 % TODO
@@ -77,7 +79,20 @@ add_route_to_map([], _, Map) -> Map;
 add_route_to_map([H|Prefixes], Id, Map) ->
   add_route_to_map(Prefixes, Id, maps:put(H, Id, Map)).
 
+getActionModule(Path, RoutingGroups) ->
+  case longestPrefix(Path, maps:keys(RoutingGroups)) of
+    [] -> error;
+    Str -> maps:get(Str, RoutingGroups)
+  end.
 
-% TODO - get prefixes, this is dumb implementation
-getPidForPath(Path, RoutingGroups) -> maps:get(Path, RoutingGroups).
-  
+longestPrefix(Path, Prefixes) ->
+  longestPrefixHelper(Path, Prefixes, "").
+
+longestPrefixHelper(_, [], Max) -> Max;
+longestPrefixHelper(Path, [H|Prefixes], Max) ->
+  case string:prefix(Path, H) of
+    nomatch -> longestPrefixHelper(Path, Prefixes, Max);
+    _       -> if length(H) > length(Max) -> longestPrefixHelper(Path, Prefixes, H);
+                  true                    -> longestPrefixHelper(Path, Prefixes, Max)
+               end
+  end.
