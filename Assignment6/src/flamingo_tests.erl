@@ -131,3 +131,8 @@ exception_test() ->
   receive
     Msg -> ?assertEqual({Ref, {500, error}}, Msg)
   end.
+
+initialise_fail_test() ->
+  {ok, Flamingo} = flamingo:new(env),
+  Msg = flamingo:route(Flamingo, ["/test"], initialise_fail, none),
+  ?assertEqual({error,initialise_exception}, Msg).
