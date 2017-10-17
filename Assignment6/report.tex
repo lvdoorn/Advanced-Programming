@@ -16,7 +16,7 @@
 	\section{Main Design}
 	We have used the \texttt{gen\_server} module to build our implementation. 
 	
-	When a new route is registered, we first check the prefixes to see if they are valid. If they are not, we send back an error. If they are valid, we spawn a supervisor loop that supervises a \texttt{routing\_group} process. When requests are made, these are sent to the supervisor, which in turn delegates the request to the process it supervises. If this process crashes, the supervisor respawns it with the initial state. 
+	When a new route is registered, we first check the prefixes to see if they are valid. If they are not, we send back an error. If they are valid, we spawn a supervisor loop that supervises a \texttt{routing\_group} process. When requests are made, these are sent to the supervisor, which in turn delegates the request to the process it supervises. If this process crashes, the supervisor respawns it with the initial state and replies to the process that made the last request with an error message.
 	
 	\section{Design Choices}
 	We have decided not to keep the state of the action modules in the supervisor process. This means that if an action module crashes, it will be restarted with the initial state.
