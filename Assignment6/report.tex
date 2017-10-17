@@ -11,12 +11,14 @@
 	To run the code, first we need to compile it. In the \texttt{src} folder we start the Erlang shell by running \texttt{erl} command, and then we compile everything with \texttt{cover:compile\_directory().}
 	Now we are ready to run the code by specifying \texttt{module:function} and pass parameters if any.
 	
-	To run tests, in the Erlang shell we simply run the \texttt{eunit:test(flamingo).} command.
+	To run tests, in the Erlang shell we simply run the \texttt{eunit:test(flamingo).}, \texttt{eunit:test(counter).} or \texttt{eunit:test(hiphop).} command.
 	
 	\section{Main Design}
 	We have used the \texttt{gen\_server} module to build our implementation. 
 	
 	When a new route is registered, we first check the prefixes to see if they are valid. If they are not, we send back an error. If they are valid, we register the prefix and its supervisor in a map in global state for future handling requests by redirecting them to appropriate supervisor. Also, we spawn a supervisor loop that supervises a \texttt{routing\_group} process. We use supervisor because the action is considered unreliable and it may fail from \texttt{exit/2}. When requests are made, these are sent to the supervisor, which in turn delegates the request to the process it supervises. If this process crashes, the supervisor respawns it with the initial state and replies to the process that made the last request with an error message.
+	
+	Furthermore, action modules are initialised and executed in a try-catch block, which means that unreliable actions will not throw exceptions that crash the server, but will result in an error message while the server keeps running. If an action module calls \texttt{exit/2}, it is respawned by the supervisor.
 	
 	\section{Design Choices}
 	We have decided not to keep the state of the action modules in the supervisor process. This means that if an action module crashes, it will be restarted with the initial state.
@@ -24,6 +26,8 @@
 	In the \texttt{counter} and \texttt{hiphop} modules we are exporting \texttt{initialise/1, action/3} so these comply with the action modules in Flamingo. For trying them out, we have 2 separated modules \texttt{counter\_tryout} and \texttt{hiphop\_tryout} that exports \texttt{server/0, try\_it/1}. This is similar to the \texttt{greeting} and \texttt{greeting\_tryout} modules. We also provide tests for each of these modules that presents more cases than just a simple case exposed with \texttt{try\_it/1}.
 	
 	\section{Assessment of Implementation}
+	We have implemented every feature from the assignment specification.
+	
 	We are quite confident that our implementation works according to the specification. During this assignment, we have used a test-driven development process. First, we went through the specification line by line and wrote tests for every case that is described. Afterwards, we started implementing the functionality incrementally. Based on this, we are quite certain that the implementation corresponds to the specification.
 	
 	Of course, we cannot test every case, and on some unspecified inputs the server may crash or display other unexpected behaviour. 
