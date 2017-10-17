@@ -1,0 +1,35 @@
+\documentclass{article}
+
+\title{Advanced Programming Assignment 5 Report}
+\author{Mihai Popovici \texttt{MTF422} \and Leendert van Doorn \texttt{XBT504}}
+
+\begin{document}
+	
+	\maketitle	
+	
+	\section{How to Run the Code}
+	To run the code, first we need to compile it. In the \texttt{src} folder we start the Erlang shell by running \texttt{erl} command, and then we compile everything with \texttt{cover:compile\_directory().}
+	Now we are ready to run the code by specifying \texttt{module:function} and pass parameters if any.
+	
+	To run tests, in the Erlang shell we simply run the \texttt{eunit:test(flamingo).} command.
+	
+	\section{Main Design}
+	We have used the \texttt{gen\_server} module to build our implementation. 
+	
+	When a new route is registered, we first check the prefixes to see if they are valid. If they are not, we send back an error. If they are valid, we spawn a supervisor loop that supervises a \texttt{routing\_group} process. 
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	\section{Design Choices}
+
+	
+	\section{Assessment of Implementation}
+	
+	
+\end{document}
